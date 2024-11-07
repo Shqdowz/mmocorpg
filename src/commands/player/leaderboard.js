@@ -60,6 +60,7 @@ module.exports = {
     }
 
     const topUsers = users.slice(0, 10);
+    console.log(topUsers);
 
     const authorIndex = users.findIndex(
       (user) => user._id.toString() == authorProfile._id.toString()
@@ -122,9 +123,10 @@ module.exports = {
       .addFields([
         {
           name: "Top 10",
-          value: topUsersValues
-            .map((value) => `${value.value} - ${value.name}`)
-            .join("\n"),
+          value:
+            topUsersValues
+              .map((value) => `${value.value} - ${value.name}`)
+              .join("\n") || "nobody lol",
         },
         {
           name: "Your position",
