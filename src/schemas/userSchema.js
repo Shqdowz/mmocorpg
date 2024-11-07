@@ -18,46 +18,9 @@ const userSchema = new Schema({
 
   statPoints: { type: Number, default: 0 },
 
-  loadouts: {
-    type: [Object],
-    default: [
-      {
-        equipped: true,
-        gear: [
-          "Monster Slugger",
-          "Water Balloon",
-          "Smart Fireworks",
-          "Monster Taser",
-          null,
-          null,
-          null,
-        ],
-      },
-      {
-        equipped: false,
-        gear: [
-          "Monster Slugger",
-          "Water Balloon",
-          "Smart Fireworks",
-          "Monster Taser",
-          null,
-          null,
-          null,
-        ],
-      },
-      {
-        equipped: false,
-        gear: [
-          "Monster Slugger",
-          "Water Balloon",
-          "Smart Fireworks",
-          "Monster Taser",
-          null,
-          null,
-          null,
-        ],
-      },
-    ],
+  loadout: {
+    type: Schema.Types.ObjectId,
+    ref: "Loadout",
   },
 
   gear: {

@@ -118,8 +118,10 @@ module.exports = {
     ) {
       playerId++;
 
-      const userProfile = await User.findOne({ userId: user.id })
-      const currentLoadout = userProfile.loadouts.find(
+      const userProfile = await User.findOne({ userId: user.id }).populate(
+        "loadout"
+      );
+      const currentLoadout = userProfile.loadout.list.find(
         (loadout) => loadout.equipped
       );
 
@@ -136,9 +138,18 @@ module.exports = {
             maxHitPoints: profile.maxHitPoints,
             speed: profile.speed,
             gear: {
-              weapon: [...currentLoadout.slice(0, 1)],
-              active: [...currentLoadout.slice(1, 5)],
-              passive: [...currentLoadout.slice(5, 7)],
+              active: {
+                list: profile.gear.active,
+                equipped: [...currentLoadout.gear.active],
+              },
+              passive: {
+                list: profile.gear.passive,
+                equipped: [...currentLoadout.gear.passive],
+              },
+              weapon: {
+                list: profile.gear.weapon,
+                equipped: [...currentLoadout.gear.weapon],
+              },
             },
           },
           original: profile,
@@ -493,7 +504,7 @@ module.exports = {
       let buttons = [];
 
       if (player.user) {
-        player.profile.copy.gear.active.forEach((gear, index) => {
+        player.profile.copy.gear.active.equipped.forEach((gear, index) => {
           if (gear) {
             let onCooldown = false;
             let gearCooldown = 0;
@@ -781,7 +792,7 @@ module.exports = {
             });
           } else {
             active =
-              player.profile.copy.gear.active[i.customId.slice(0, 1)];
+              player.profile.copy.gear.active.equipped[i.customId.slice(0, 1)];
             collector.stop();
           }
         });
@@ -1110,7 +1121,7 @@ module.exports = {
         affected = [];
 
         if (player.thresholds["Active Ace"]) {
-          player.profile.copy.gear.active[active] += 1;
+          player.profile.copy.gear.active.list[active] += 1;
         }
 
         let minMax;
@@ -1121,7 +1132,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [14, 18],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1135,7 +1146,7 @@ module.exports = {
               if (Math.random() <= 0.5) {
                 stun = await CalculateEffect(
                   [0.4],
-                  0.95 + 0.05 * player.profile.copy.gear.active[active]
+                  0.95 + 0.05 * player.profile.copy.gear.active.list[active]
                 );
                 await AddEffect(player, victim, "Stun", active, stun, 1);
               } else {
@@ -1164,7 +1175,7 @@ module.exports = {
               1 -
               (await CalculateEffect(
                 [0.2],
-                0.95 + 0.05 * player.profile.copy.gear.active[active]
+                0.95 + 0.05 * player.profile.copy.gear.active.list[active]
               ));
             await AddEffect(
               player,
@@ -1192,7 +1203,7 @@ module.exports = {
             staticDamage = await CalculateEffect(
               [28, 32],
               (overtime ? 2 : 1) *
-                (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1210,7 +1221,7 @@ module.exports = {
               1 +
               (await CalculateEffect(
                 [0.4],
-                0.95 + 0.05 * player.profile.copy.gear.active[active]
+                0.95 + 0.05 * player.profile.copy.gear.active.list[active]
               ));
             await AddEffect(
               player,
@@ -1242,7 +1253,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [8, 12],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1270,13 +1281,13 @@ module.exports = {
               staticDoT = await CalculateEffect(
                 [3, 7],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
               );
               await AddEffect(player, victim, "Damage", active, staticDoT, 3);
 
               speed = await CalculateEffect(
                 [-0.15],
-                0.9 + 0.1 * player.profile.copy.gear.active[active]
+                0.9 + 0.1 * player.profile.copy.gear.active.list[active]
               );
               await AddEffect(player, victim, "Speed", active, speed, 3);
 
@@ -1297,7 +1308,7 @@ module.exports = {
             staticHealing = await CalculateEffect(
               [16, 20],
               (overtime ? 0.5 : 1) *
-                (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
             );
             await AddEffect(
               player,
@@ -1310,7 +1321,7 @@ module.exports = {
 
             speed = await CalculateEffect(
               [0.18],
-              0.9 + 0.1 * player.profile.copy.gear.active[active]
+              0.9 + 0.1 * player.profile.copy.gear.active.list[active]
             );
             await AddEffect(player, player, "Speed", active, speed, 2);
 
@@ -1331,7 +1342,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [14, 18],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active[active])
+                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1492,14 +1503,14 @@ module.exports = {
                       0.2 *
                         allPlayers.find(
                           (p) => p.id == player.thresholds.ownerId
-                        ).profile.copy.gear.weapon["Wolf Stick"])
+                        ).profile.copy.gear.weapon.list["Wolf Stick"])
                 );
                 stun = await CalculateEffect(
                   [0.12],
                   0.995 +
                     0.05 *
                       allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .profile.copy.gear.weapon["Wolf Stick"]
+                        .profile.copy.gear.weapon.list["Wolf Stick"]
                 );
                 break;
             }
@@ -1964,14 +1975,14 @@ module.exports = {
                       0.2 *
                         allPlayers.find(
                           (p) => p.id == player.thresholds.ownerId
-                        ).profile.copy.gear.active["Shelldon"])
+                        ).profile.copy.gear.active.list["Shelldon"])
                 );
                 stun = await CalculateEffect(
                   [0.12],
                   0.95 +
                     0.05 *
                       allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .profile.copy.gear.active["Shelldon"]
+                        .profile.copy.gear.active.list["Shelldon"]
                 );
                 break;
             }
@@ -2424,7 +2435,7 @@ module.exports = {
 
         if (player.thresholds["Active Ace"]) {
           player.thresholds["Active Ace"] = false;
-          player.profile.copy.gear.active[active] -= 1;
+          player.profile.copy.gear.active.list[active] -= 1;
         }
 
         FilterDeadPlayers();
@@ -2448,7 +2459,7 @@ module.exports = {
             case "Active Ace":
               chance = await CalculateEffect(
                 [0.1],
-                0.8 + 0.2 * player.profile.copy.gear.passive[passive]
+                0.8 + 0.2 * player.profile.copy.gear.passive.list[passive]
               );
 
               if (Math.random() <= chance) {
@@ -2460,7 +2471,7 @@ module.exports = {
             case "Bunch of Dice":
               chance = await CalculateEffect(
                 [0.25],
-                0.8 + 0.2 * player.profile.copy.gear.passive[passive]
+                0.8 + 0.2 * player.profile.copy.gear.passive.list[passive]
               );
 
               if (Math.random() <= chance) {
@@ -2480,7 +2491,7 @@ module.exports = {
                 staticDamage += await CalculateEffect(
                   [15, 15],
                   (overtime ? 2 : 1) *
-                    (0.8 + 0.2 * player.profile.copy.gear.passive[passive])
+                    (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
                 );
               }
 
@@ -2510,7 +2521,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [4, 6],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive[passive])
+                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
               );
 
               for (const victim of teammates) {
@@ -2543,7 +2554,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [4, 6],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive[passive])
+                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
               );
 
               for (const victim of opponents) {
@@ -2577,7 +2588,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [activeDamage * percentage, activeDamage * percentage],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive[passive])
+                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
               );
 
               await AddEffect(
@@ -2608,7 +2619,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [6, 10],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive[passive])
+                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
               );
               await AddEffect(
                 player,
@@ -2621,7 +2632,7 @@ module.exports = {
 
               stun = await CalculateEffect(
                 [0.12],
-                0.95 + 0.05 * player.profile.copy.gear.passive[passive]
+                0.95 + 0.05 * player.profile.copy.gear.passive.list[passive]
               );
               await AddEffect(player, victim, "Stun", "Zap in a Box", stun, 1);
 
@@ -2652,8 +2663,8 @@ module.exports = {
         }
       }
 
-      if (player.user && player.profile.copy.gear.passive.length > 0) {
-        await HandlePassives(player.profile.copy.gear.passive);
+      if (player.user && player.profile.copy.gear.passive.equipped.length > 0) {
+        await HandlePassives(player.profile.copy.gear.passive.equipped);
       }
 
       player.stats["Turns Taken"] += 1;
@@ -2679,7 +2690,7 @@ module.exports = {
         affected = [];
 
         if (player.thresholds["Bunch of Dice"]) {
-          player.profile.copy.gear.weapon[weapon] += 1;
+          player.profile.copy.gear.weapon.list[weapon] += 1;
         }
 
         switch (weapon) {
@@ -2714,7 +2725,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [15, 15],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon[weapon])
+                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
               );
               await AddEffect(
                 player,
@@ -2756,13 +2767,13 @@ module.exports = {
               ) {
                 stun = await CalculateEffect(
                   [1],
-                  0.95 + 0.05 * player.profile.copy.gear.weapon[weapon]
+                  0.95 + 0.05 * player.profile.copy.gear.weapon.list[weapon]
                 );
                 await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
                 speed = await CalculateEffect(
                   [-0.22],
-                  0.9 + 0.1 * player.profile.copy.gear.weapon[weapon]
+                  0.9 + 0.1 * player.profile.copy.gear.weapon.list[weapon]
                 );
                 await AddEffect(player, victim, "Speed", weapon, speed, 3);
 
@@ -2786,22 +2797,22 @@ module.exports = {
             break;
           case "Portable Portal":
             const requiredTurns =
-              GetCooldown(player.profile.copy.gear.active[0]) + 2;
+              GetCooldown(player.profile.copy.gear.active.equipped[0]) + 2;
             if (player.thresholds["Portable Portal"] < requiredTurns) break;
 
             player.thresholds["Portable Portal"] -= requiredTurns;
 
             weaponReply = `**${player.name}**'s **Portable Portal** has reached its activation threshold!`;
 
-            const equippedOn1 = player.profile.copy.gear.active[0];
-            const temp = player.profile.copy.gear.active[equippedOn1];
-            player.profile.copy.gear.active[equippedOn1] =
-              player.profile.copy.gear.weapon[weapon];
+            const equippedOn1 = player.profile.copy.gear.active.equipped[0];
+            const temp = player.profile.copy.gear.active.list[equippedOn1];
+            player.profile.copy.gear.active.list[equippedOn1] =
+              player.profile.copy.gear.weapon.list[weapon];
 
             setTimeout(async () => {
               await HandleActive(equippedOn1, false);
 
-              player.profile.copy.gear.active[equippedOn1] = temp;
+              player.profile.copy.gear.active.list[equippedOn1] = temp;
             }, 50);
             break;
           case "Spinsickle":
@@ -2815,7 +2826,7 @@ module.exports = {
 
             speed = await CalculateEffect(
               [0.8],
-              0.9 + 0.1 * player.profile.copy.gear.weapon[weapon]
+              0.9 + 0.1 * player.profile.copy.gear.weapon.list[weapon]
             );
             await AddEffect(player, player, "Speed", weapon, speed, 100);
 
@@ -2849,7 +2860,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [30, 30],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon[weapon])
+                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
               );
               await AddEffect(
                 player,
@@ -2862,7 +2873,7 @@ module.exports = {
 
               stun = await CalculateEffect(
                 [1.2],
-                0.95 + 0.05 * player.profile.copy.gear.weapon[weapon]
+                0.95 + 0.05 * player.profile.copy.gear.weapon.list[weapon]
               );
               await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
@@ -2900,7 +2911,7 @@ module.exports = {
               staticDoT = await CalculateEffect(
                 [15, 15],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon[weapon])
+                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
               );
 
               await AddEffect(player, victim, "Damage", weapon, staticDoT, 3);
@@ -2948,7 +2959,7 @@ module.exports = {
 
         if (player.thresholds["Bunch of Dice"]) {
           player.thresholds["Bunch of Dice"] = false;
-          player.profile.copy.gear.weapon[weapon] -= 1;
+          player.profile.copy.gear.weapon.list[weapon] -= 1;
         }
 
         FilterDeadPlayers();
@@ -2956,7 +2967,7 @@ module.exports = {
 
       // Weapon gear
       if (player.user) {
-        await HandleWeapon(player.profile.copy.gear.weapon[0]);
+        await HandleWeapon(player.profile.copy.gear.weapon.equipped[0]);
       }
 
       if (bunchOfDiceActivated) player.thresholds["Bunch of Dice"] = true;
@@ -3258,7 +3269,7 @@ module.exports = {
         if (Math.ceil(Math.random() * chance) == 1) {
           const unlocked = [
             ...["active", "passive", "weapon"].flatMap((type) =>
-              FilterGear(ally.profile.copy.gear[type])
+              FilterGear(ally.profile.copy.gear[type].list)
             ),
             ...ally.profile.original.inventory.blueprints,
           ];

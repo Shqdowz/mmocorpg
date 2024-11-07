@@ -1,5 +1,6 @@
 const User = require("../../schemas/userSchema");
 const Inventory = require("../../schemas/inventorySchema");
+const Loadout = require("../../schemas/loadoutSchema");
 const mongoose = require("mongoose");
 const { EmbedBuilder } = require("discord.js");
 
@@ -17,11 +18,17 @@ module.exports = {
       });
       await inventory.save();
 
+      const loadout = new Loadout({
+        _id: new mongoose.Types.ObjectId(),
+      });
+      await loadout.save();
+
       authorProfile = new User({
         _id: new mongoose.Types.ObjectId(),
         userId: interaction.user.id,
         username: interaction.user.username,
 
+        loadout: loadout._id,
         inventory: inventory._id,
       });
       await authorProfile.save();
@@ -44,11 +51,17 @@ module.exports = {
           });
           await inventory.save();
 
+          const loadout = new Loadout({
+            _id: new mongoose.Types.ObjectId(),
+          });
+          await loadout.save();
+
           const targetProfile = new User({
             _id: new mongoose.Types.ObjectId(),
             userId: target.id,
             username: target.username,
 
+            loadout: loadout._id,
             inventory: inventory._id,
           });
           await targetProfile.save();

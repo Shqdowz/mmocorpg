@@ -12,7 +12,7 @@ const User = require("../../schemas/userSchema");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("gear")
-    .setDescription("(DEV) View, equip and upgrade gear")
+    .setDescription("View, equip and upgrade gear")
     .addSubcommand((subcommand) =>
       subcommand.setName("view").setDescription("View your gear")
     )
@@ -244,7 +244,7 @@ module.exports = {
 
     const authorProfile = await User.findOne({
       userId: interaction.user.id,
-    });
+    }).populate("loadout");
 
     function ValidItem(gear) {
       const foundGear = gearArray.all.find(
@@ -320,60 +320,9 @@ module.exports = {
     }
 
     if (interaction.options.getSubcommand() == "view") {
-      const currentLoadout = authorProfile.loadouts.find(
-        (loadout) => loadout.equipped
-      );
+      const loadouts = [...authorProfile.loadout.list];
 
-      let embeds = [
-        new EmbedBuilder()
-        .setTitle(`${authorProfile.username}'s equipped gear`)
-        .addFields([
-          {
-            name: "Weapon",
-            value: `${currentLoadout.gear
-              .slice(0, 1)
-              .map((value) =>
-                value
-                  ? `- \`[${
-                      authorProfile.gear.weapon[value]
-                    }]\` ${client.getEmoji(value)} ${value}`
-                  : `- -`
-              )}`,
-          },
-          {
-            name: "Actives",
-            value: `${currentLoadout.gear
-              .slice(1, 5)
-              .map((value) =>
-                value
-                  ? `- \`[${
-                      authorProfile.gear.active[value]
-                    }]\` ${client.getEmoji(value)} ${value}`
-                  : `- -`
-              )
-              .join("\n")}`,
-          },
-          {
-            name: "Passives",
-            value: `${currentLoadout.gear
-              .slice(5, 7)
-              .map((value) =>
-                value
-                  ? `- \`[${
-                      authorProfile.gear.passive[value]
-                    }]\` ${client.getEmoji(value)} ${value}`
-                  : `- -`
-              )
-              .join("\n")}`,
-          },
-        ])
-        .setFooter({
-          iconURL: interaction.user.displayAvatarURL(),
-          text: `${footer} by ${interaction.user.username}`,
-        })
-        .setTimestamp()
-        .setColor(client.getColor("level", authorProfile)),
-
+      const embeds = [
         new EmbedBuilder()
           .setTitle(`${authorProfile.username}'s unlocked gear`)
           .addFields([
@@ -415,6 +364,56 @@ module.exports = {
           .setTimestamp()
           .setColor(client.getColor("level", authorProfile)),
       ];
+
+      embeds.push(
+        ...loadouts.map((loadout, index) => {
+          return new EmbedBuilder()
+            .setTitle(`${authorProfile.username}'s loadout #${index + 1}`)
+            .setDescription(`Equipped: ${loadout.equipped ? "yes" : "no"}`)
+            .addFields([
+              {
+                name: "Weapon",
+                value: `${loadout.gear.weapon.map((value) =>
+                  value
+                    ? `- \`[${
+                        authorProfile.gear.weapon[value]
+                      }]\` ${client.getEmoji(value)} ${value}`
+                    : `- -`
+                )}`,
+              },
+              {
+                name: "Actives",
+                value: `${loadout.gear.active
+                  .map((value) =>
+                    value
+                      ? `- \`[${
+                          authorProfile.gear.active[value]
+                        }]\` ${client.getEmoji(value)} ${value}`
+                      : `- -`
+                  )
+                  .join("\n")}`,
+              },
+              {
+                name: "Passives",
+                value: `${loadout.gear.passive
+                  .map((value) =>
+                    value
+                      ? `- \`[${
+                          authorProfile.gear.passive[value]
+                        }]\` ${client.getEmoji(value)} ${value}`
+                      : `- -`
+                  )
+                  .join("\n")}`,
+              },
+            ])
+            .setFooter({
+              iconURL: interaction.user.displayAvatarURL(),
+              text: `Requested by ${interaction.user.username}`,
+            })
+            .setTimestamp()
+            .setColor(client.getColor("level", authorProfile));
+        })
+      );
 
       const previousButton = new ButtonBuilder()
         .setCustomId(`previous:${interaction.id}`)
@@ -494,54 +493,51 @@ module.exports = {
 
       const loadout = parseInt(interaction.options.getString("loadout"));
 
-      const currentLoadout = authorProfile.loadouts.find(
+      const currentLoadout = authorProfile.loadout.list.find(
         (loadout) => loadout.equipped
       );
-      const specifiedLoadout = authorProfile.loadouts[loadout];
-      const inputLoadout = [
-        weapon,
-        active1,
-        active2,
-        active3,
-        active4,
-        passive1,
-        passive2,
-      ];
+      const specifiedLoadout = authorProfile.loadout.list[loadout];
+      const inputLoadout = {
+        gear: {
+          weapon: [weapon],
+          active: [active1, active2, active3, active4],
+          passive: [passive1, passive2],
+        },
+      };
 
       async function CheckGearValidity() {
-        for (const item of inputLoadout) {
-          if (!item) continue;
+        for (const type of Object.keys(inputLoadout.gear)) {
+          for (const gear of inputLoadout.gear[type]) {
+            if (!gear) continue;
 
-          const validity = ValidItem(item);
+            const validity = ValidItem(gear);
 
-          if (validity[0]) {
-            const type = gearArray.active.includes(validity[1])
-              ? "active"
-              : gearArray.passive.includes(validity[1])
-              ? "passive"
-              : "weapon";
-
-            if (!authorProfile.gear[type][validity[1]]) {
+            if (validity[0]) {
+              if (!authorProfile.gear[type][validity[1]]) {
+                return await interaction.reply({
+                  content: `You don't have ${validity[1]} unlocked!`,
+                  ephemeral: true,
+                });
+              }
+            } else {
               return await interaction.reply({
-                content: `You don't have ${validity[1]} unlocked!`,
+                content: `Couldn't find '${validity[1]}'. Did you make a typo?`,
                 ephemeral: true,
               });
             }
-          } else {
-            return await interaction.reply({
-              content: `Couldn't find '${validity[1]}'. Did you make a typo?`,
-              ephemeral: true,
-            });
           }
         }
       }
 
       async function CheckLoadoutValidity(current, input) {
-        const merged = current.gear
-          .map((value, index) => {
-            return input[index] != null ? input[index] : value;
-          })
-          .filter((value) => value);
+        let merged = [];
+        for (const type of Object.keys(current.gear)) {
+          current.gear[type].forEach((gear, index) => {
+            return merged.push(input.gear[type][index] || gear);
+          });
+        }
+
+        merged = merged.filter((value) => value);
 
         if (new Set(merged).size != merged.length) {
           return await interaction.reply({
@@ -552,66 +548,75 @@ module.exports = {
         }
       }
 
+      async function UpdateLoadout(loadout, input) {
+        for (const type of Object.keys(loadout.gear)) {
+          loadout.gear[type].forEach((gear, index) => {
+            loadout.gear[type][index] = input.gear[type][index] || gear;
+          });
+        }
+        authorProfile.loadout.markModified("list");
+        await authorProfile.loadout.save();
+      }
+
+      const hasLoadout = !isNaN(loadout);
+      const hasGear = Object.keys(inputLoadout.gear).some((type) =>
+        inputLoadout.gear[type].some((gear) => gear)
+      );
+
       let title, fieldValue, footer;
 
-      if (isNaN(loadout)) {
-        if (inputLoadout.every((item) => !item)) {
-          // no loadout, no gear: show current equipped loadout
-          title = `Loadout #${
-            authorProfile.loadouts.indexOf(currentLoadout) + 1
-          }:`;
-          fieldValue = currentLoadout.gear;
-          footer = `Requested`;
-        } else {
-          // no loadout, gear: change gear on current loadout
+      if (hasLoadout) {
+        if (hasGear) {
+          // loadout, gear: change gear on said loadout
+
           if (
             (await CheckGearValidity()) ||
             (await CheckLoadoutValidity(currentLoadout, inputLoadout))
           )
             return;
 
-          currentLoadout.gear = currentLoadout.gear.map((value, index) => {
-            return inputLoadout[index] != null ? inputLoadout[index] : value;
-          });
-          authorProfile.markModified("loadouts");
-          await authorProfile.save();
-
-          title = `Loadout #${
-            authorProfile.loadouts.indexOf(currentLoadout) + 1
-          } updated!`;
-          fieldValue = currentLoadout.gear;
-          footer = `Performed`;
-        }
-      } else {
-        if (inputLoadout.every((item) => !item)) {
-          // loadout, no gear: equip said loadout
-          currentLoadout.equipped = false;
-          specifiedLoadout.equipped = true;
-          authorProfile.markModified("loadouts");
-          await authorProfile.save();
-
-          title = `Loadout #${loadout + 1} equipped!`;
-          fieldValue = specifiedLoadout.gear;
-          footer = `Performed`;
-        } else {
-          // loadout, gear: change gear on said loadout
-          if (
-            (await CheckGearValidity()) ||
-            (await CheckLoadoutValidity(specifiedLoadout, inputLoadout))
-          )
-            return;
-
-          specifiedLoadout.gear = authorProfile.loadouts[loadout].gear.map(
-            (value, index) => {
-              return inputLoadout[index] != null ? inputLoadout[index] : value;
-            }
-          );
-          authorProfile.markModified("loadouts");
-          await authorProfile.save();
+          await UpdateLoadout(specifiedLoadout, inputLoadout);
 
           title = `Loadout #${loadout + 1} updated!`;
           fieldValue = specifiedLoadout.gear;
           footer = `Performed`;
+        } else {
+          // loadout, no gear: equip said loadout
+
+          currentLoadout.equipped = false;
+          specifiedLoadout.equipped = true;
+          authorProfile.loadout.markModified("list");
+          await authorProfile.loadout.save();
+
+          title = `Loadout #${loadout + 1} equipped!`;
+          fieldValue = specifiedLoadout.gear;
+          footer = `Performed`;
+        }
+      } else {
+        if (hasGear) {
+          // no loadout, gear: change gear on current loadout
+
+          if (
+            (await CheckGearValidity()) ||
+            (await CheckLoadoutValidity(currentLoadout, inputLoadout))
+          )
+            return;
+
+          await UpdateLoadout(currentLoadout, inputLoadout);
+
+          title = `Loadout #${
+            authorProfile.loadout.list.indexOf(currentLoadout) + 1
+          } updated!`;
+          fieldValue = currentLoadout.gear;
+          footer = `Performed`;
+        } else {
+          // no loadout, no gear: show current equipped loadout
+
+          title = `Loadout #${
+            authorProfile.loadout.list.indexOf(currentLoadout) + 1
+          }`;
+          fieldValue = currentLoadout.gear;
+          footer = `Requested`;
         }
       }
 
@@ -620,20 +625,17 @@ module.exports = {
         .addFields([
           {
             name: "Weapon",
-            value: `${fieldValue
-              .slice(0, 1)
-              .map((value) =>
-                value
-                  ? `- \`[${
-                      authorProfile.gear.weapon[value]
-                    }]\` ${client.getEmoji(value)} ${value}`
-                  : `- -`
-              )}`,
+            value: `${fieldValue.weapon.map((value) =>
+              value
+                ? `- \`[${
+                    authorProfile.gear.weapon[value]
+                  }]\` ${client.getEmoji(value)} ${value}`
+                : `- -`
+            )}`,
           },
           {
             name: "Actives",
-            value: `${fieldValue
-              .slice(1, 5)
+            value: `${fieldValue.active
               .map((value) =>
                 value
                   ? `- \`[${
@@ -645,8 +647,7 @@ module.exports = {
           },
           {
             name: "Passives",
-            value: `${fieldValue
-              .slice(5, 7)
+            value: `${fieldValue.passive
               .map((value) =>
                 value
                   ? `- \`[${
@@ -691,7 +692,7 @@ module.exports = {
       const gearLevel = authorProfile.gear[type][validity[1]];
 
       let embed = new EmbedBuilder()
-        .setTitle(`${validity[1]} - Level ${gearLevel}`)
+        .setTitle(`\`${gearLevel}\` - ${validity[1]}`)
         .setDescription(
           gearLevel < 11
             ? `Already achieved levels are hidden. __Underlined__ materials are missing.`
