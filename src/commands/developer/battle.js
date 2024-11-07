@@ -118,6 +118,11 @@ module.exports = {
     ) {
       playerId++;
 
+      const userProfile = await User.findOne({ userId: user.id })
+      const currentLoadout = userProfile.loadouts.find(
+        (loadout) => loadout.equipped
+      );
+
       const ally = {
         id: playerId,
         name: name,
@@ -130,7 +135,11 @@ module.exports = {
             hitPoints: profile.hitPoints,
             maxHitPoints: profile.maxHitPoints,
             speed: profile.speed,
-            gear: profile.gear,
+            gear: {
+              weapon: [...currentLoadout.slice(0, 1)],
+              active: [...currentLoadout.slice(1, 5)],
+              passive: [...currentLoadout.slice(5, 7)],
+            },
           },
           original: profile,
         },
@@ -484,7 +493,7 @@ module.exports = {
       let buttons = [];
 
       if (player.user) {
-        player.profile.copy.gear.active.equipped.forEach((gear, index) => {
+        player.profile.copy.gear.active.forEach((gear, index) => {
           if (gear) {
             let onCooldown = false;
             let gearCooldown = 0;
@@ -772,7 +781,7 @@ module.exports = {
             });
           } else {
             active =
-              player.profile.copy.gear.active.equipped[i.customId.slice(0, 1)];
+              player.profile.copy.gear.active[i.customId.slice(0, 1)];
             collector.stop();
           }
         });
@@ -2643,8 +2652,8 @@ module.exports = {
         }
       }
 
-      if (player.user && player.profile.copy.gear.passive.equipped.length > 0) {
-        await HandlePassives(player.profile.copy.gear.passive.equipped);
+      if (player.user && player.profile.copy.gear.passive.length > 0) {
+        await HandlePassives(player.profile.copy.gear.passive);
       }
 
       player.stats["Turns Taken"] += 1;
@@ -2777,14 +2786,14 @@ module.exports = {
             break;
           case "Portable Portal":
             const requiredTurns =
-              GetCooldown(player.profile.copy.gear.active.equipped[0]) + 2;
+              GetCooldown(player.profile.copy.gear.active[0]) + 2;
             if (player.thresholds["Portable Portal"] < requiredTurns) break;
 
             player.thresholds["Portable Portal"] -= requiredTurns;
 
             weaponReply = `**${player.name}**'s **Portable Portal** has reached its activation threshold!`;
 
-            const equippedOn1 = player.profile.copy.gear.active.equipped[0];
+            const equippedOn1 = player.profile.copy.gear.active[0];
             const temp = player.profile.copy.gear.active[equippedOn1];
             player.profile.copy.gear.active[equippedOn1] =
               player.profile.copy.gear.weapon[weapon];
@@ -2947,7 +2956,7 @@ module.exports = {
 
       // Weapon gear
       if (player.user) {
-        await HandleWeapon(player.profile.copy.gear.weapon.equipped[0]);
+        await HandleWeapon(player.profile.copy.gear.weapon[0]);
       }
 
       if (bunchOfDiceActivated) player.thresholds["Bunch of Dice"] = true;

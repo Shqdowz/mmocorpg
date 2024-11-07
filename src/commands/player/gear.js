@@ -320,64 +320,62 @@ module.exports = {
     }
 
     if (interaction.options.getSubcommand() == "view") {
+      const currentLoadout = authorProfile.loadouts.find(
+        (loadout) => loadout.equipped
+      );
+
       let embeds = [
         new EmbedBuilder()
-          .setTitle(`${interaction.user.username}'s equipped gear`)
-          .addFields([
-            {
-              name: "Weapon",
-              value: `- \`[${
-                authorProfile.gear.weapon[authorProfile.gear.weapon.equipped[0]]
-              }]\` ${client.getEmoji(
-                authorProfile.gear.weapon.equipped[0]
-                  .toLowerCase()
-                  .replaceAll(" ", "_")
-              )} ${authorProfile.gear.weapon.equipped[0]}`,
-            },
-            {
-              name: "Actives",
-              value: authorProfile.gear.active.equipped
-                .map(
-                  (active) =>
-                    `- ${
-                      active
-                        ? `\`[${
-                            authorProfile.gear.active[active]
-                          }]\` ${client.getEmoji(
-                            active.toLowerCase().replaceAll(" ", "_")
-                          )} ${active}`
-                        : "-"
-                    }`
-                )
-                .join("\n"),
-            },
-            {
-              name: "Passives",
-              value: authorProfile.gear.passive.equipped
-                .map(
-                  (passive) =>
-                    `- ${
-                      passive
-                        ? `\`[${
-                            authorProfile.gear.passive[passive]
-                          }]\` ${client.getEmoji(
-                            passive.toLowerCase().replaceAll(" ", "_")
-                          )} ${passive}`
-                        : "-"
-                    }`
-                )
-                .join("\n"),
-            },
-          ])
-          .setFooter({
-            iconURL: interaction.user.displayAvatarURL(),
-            text: `Requested by ${interaction.user.username}`,
-          })
-          .setTimestamp()
-          .setColor(client.getColor("level", authorProfile)),
+        .setTitle(`${authorProfile.username}'s equipped gear`)
+        .addFields([
+          {
+            name: "Weapon",
+            value: `${currentLoadout.gear
+              .slice(0, 1)
+              .map((value) =>
+                value
+                  ? `- \`[${
+                      authorProfile.gear.weapon[value]
+                    }]\` ${client.getEmoji(value)} ${value}`
+                  : `- -`
+              )}`,
+          },
+          {
+            name: "Actives",
+            value: `${currentLoadout.gear
+              .slice(1, 5)
+              .map((value) =>
+                value
+                  ? `- \`[${
+                      authorProfile.gear.active[value]
+                    }]\` ${client.getEmoji(value)} ${value}`
+                  : `- -`
+              )
+              .join("\n")}`,
+          },
+          {
+            name: "Passives",
+            value: `${currentLoadout.gear
+              .slice(5, 7)
+              .map((value) =>
+                value
+                  ? `- \`[${
+                      authorProfile.gear.passive[value]
+                    }]\` ${client.getEmoji(value)} ${value}`
+                  : `- -`
+              )
+              .join("\n")}`,
+          },
+        ])
+        .setFooter({
+          iconURL: interaction.user.displayAvatarURL(),
+          text: `${footer} by ${interaction.user.username}`,
+        })
+        .setTimestamp()
+        .setColor(client.getColor("level", authorProfile)),
 
         new EmbedBuilder()
-          .setTitle(`${interaction.user.username}'s (un)locked gear`)
+          .setTitle(`${authorProfile.username}'s unlocked gear`)
           .addFields([
             {
               name: "Weapons",
