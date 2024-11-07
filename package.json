@@ -1,0 +1,20 @@
+{
+  "name": "mmocorpg",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "nodemon ."
+  },
+  "keywords": [],
+  "author": "Shqdowz",
+  "license": "ISC",
+  "description": "Gear up, we're going monster hunting! Gather your colleagues, make your way through dungeons & raids, collect resources, upgrade your gear and become the #1 monster hunter in the company!",
+  "dependencies": {
+    "@discordjs/rest": "^2.3.0",
+    "discord-api-types": "^0.37.89",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.4.1",
+    "nodemon": "^3.1.3"
+  }
+}
