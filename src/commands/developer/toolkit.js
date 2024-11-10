@@ -1,5 +1,14 @@
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
+// -=+=- Schemas -=+=-
+const Achievement = require("../../schemas/achievementSchema");
+const Cat = require("../../schemas/catSchema");
+const Guild = require("../../schemas/guildSchema");
+const Loadout = require("../../schemas/loadoutSchema");
+const Monster = require("../../schemas/monsterSchema");
+const Party = require("../../schemas/partySchema");
+const Quest = require("../../schemas/questSchema");
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -46,7 +55,7 @@ module.exports = {
     // -=+=- New schema variable add -=+=-
     // authorProfile.inventory.monsterDrops["Berserker Fist"] =
     //   (authorProfile.inventory.monsterDrops["Berserker Fist"] || 0) + 1;
-    // authorProfile.inventory.mocoins += 10;
+    // authorProfile.inventory["mo.coins"] += 10;
     // await authorProfile.inventory.save();
 
     // -=+=- Channel sending -=+=-

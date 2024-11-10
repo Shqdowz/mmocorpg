@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,6 +8,7 @@ const {
   ComponentType,
 } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -137,11 +139,11 @@ module.exports = {
       const missing = [];
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          if (inventory.mocoins < material[1]) {
+          if (inventory["mo.coins"] < material[1]) {
             missing.push([
               client.getEmoji("mocoin"),
               material[0],
-              `${inventory.mocoins}/${material[1]}`,
+              `${inventory["mo.coins"]}/${material[1]}`,
             ]);
           }
         } else if (
@@ -287,11 +289,11 @@ module.exports = {
 
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          if (inventory.mocoins < material[1]) {
+          if (inventory["mo.coins"] < material[1]) {
             missing.push([
               client.getEmoji("mocoin"),
               material[0],
-              `${inventory.mocoins}/${material[1]}`,
+              `${inventory["mo.coins"]}/${material[1]}`,
             ]);
           }
         } else if (
@@ -715,7 +717,7 @@ module.exports = {
               if (m[0] == "mo.coins") {
                 emoji = client.getEmoji("mocoin");
 
-                if (authorProfile.inventory.mocoins < m[1]) missing = true;
+                if (authorProfile.inventory["mo.coins"] < m[1]) missing = true;
               } else if (m[0] == validity[1]) {
                 emoji = client.getEmoji("blueprint");
 
@@ -766,6 +768,13 @@ module.exports = {
         : "passive";
       let gearLevel = authorProfile.gear[type][validity[1]] + 1;
 
+      if (Math.floor((authorProfile.level - 1) / 6) + 1 < gearLevel) {
+        return await interaction.reply({
+          content: `You can't yet upgrade gear to level ${gearLevel}! Please come back later.`,
+          ephemeral: true,
+        });
+      }
+
       const materials = GetMaterials(validity[1], gearLevel);
 
       await authorProfile.populate("inventory");
@@ -789,7 +798,7 @@ module.exports = {
 
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          authorProfile.inventory.mocoins -= material[1];
+          authorProfile.inventory["mo.coins"] -= material[1];
           await authorProfile.inventory.save();
 
           continue;

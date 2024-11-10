@@ -135,7 +135,7 @@ module.exports = {
           copy: {
             level: profile.level,
             hitPoints: profile.hitPoints,
-            maxHitPoints: profile.maxHitPoints,
+            maxHitPoints: profile.hitPoints,
             speed: profile.speed,
             gear: {
               active: {
@@ -230,7 +230,7 @@ module.exports = {
           copy: {
             level: newEnemy.level,
             hitPoints: newEnemy.hitPoints,
-            maxHitPoints: newEnemy.maxHitPoints,
+            maxHitPoints: newEnemy.hitPoints,
             speed: newEnemy.speed,
             skills: newEnemy.skills,
             tier: newEnemy.tier,
@@ -3331,7 +3331,7 @@ module.exports = {
             item.amount;
         });
       }
-      if (mocoins) ally.profile.original.inventory.mocoins += mocoins;
+      if (mocoins) ally.profile.original.inventory["mo.coins"] += mocoins;
       if (experience) ally.profile.original.experience += experience;
 
       if (blueprint || loot.length || mocoins || experience) {

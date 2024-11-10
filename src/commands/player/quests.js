@@ -1,8 +1,8 @@
-// Schemas
-const User = require("../../schemas/userSchema");
-
-// Dependencies
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+
+// -=+=- Schemas -=+=-
+const User = require("../../schemas/userSchema");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -32,9 +32,9 @@ module.exports = {
       .setDescription(
         `${
           authorProfile.quests.length
-            ? `New quests <t:${next}:R>.`
-            : `You've completed all quests for today!\nNew quests <t:${next}:R>.`
-        }`
+            ? `You've completed all quests for today!\n`
+            : `Be sure to complete them on time!\n`
+        }New quests <t:${next}:R>.`
       )
       .setFooter({
         iconURL: interaction.user.displayAvatarURL(),
@@ -43,33 +43,44 @@ module.exports = {
       .setTimestamp()
       .setColor(client.getColor("level", authorProfile));
 
-    for (const quest of authorProfile.quests) {
-      const size =
-        quest.difficulty == "Easy"
-          ? "Small"
-          : quest.difficulty == "Medium"
-          ? "Medium"
-          : "Large";
+    if (authorProfile.quests.length) {
+      for (const quest of authorProfile.quests) {
+        const size =
+          quest.difficulty == "Easy"
+            ? "Small"
+            : quest.difficulty == "Medium"
+            ? "Medium"
+            : "Large";
 
-      const completed = quest.completed ? "~~" : "";
+        let fieldName, fieldValue;
 
-      const fieldName = `${client.getEmoji(quest.difficulty)} ${completed}${
-        quest.name
-      }${completed} ${client.getEmoji(quest.difficulty)}`;
-      const fieldValue = `- ${client.getEmoji("objective")} ${completed}${
-        quest.description
-      }${completed}\n- ${quest.completed ? "🟢" : "🔴"} ${completed}${
-        quest.progress
-      } / ${quest.goal}${completed}\n> ${client.getEmoji(
-        `${size}_crate`
-      )} ${completed}${size} Crate${completed}`;
+        if (quest.completed) {
+          fieldName = `${client.getEmoji(quest.difficulty)} ~~${
+            quest.name
+          }~~ ${client.getEmoji(quest.difficulty)}`;
+          fieldValue = `- ${client.getEmoji("objective")} ~~${
+            quest.description
+          }~~\n- ${quest.completed ? "🟢" : "🔴"} ~~${quest.progress} / ${
+            quest.goal
+          }~~\n> ${client.getEmoji(`${size}_crate`)} ~~${size} Crate~~`;
+        } else {
+          fieldName = `${client.getEmoji(quest.difficulty)} ${
+            quest.name
+          } ${client.getEmoji(quest.difficulty)}`;
+          fieldValue = `- ${client.getEmoji("objective")} ${
+            quest.description
+          }\n- ${quest.completed ? "🟢" : "🔴"} ${quest.progress} / ${
+            quest.goal
+          }\n> ${client.getEmoji(`${size}_crate`)} ${size} Crate`;
+        }
 
-      embed.addFields([
-        {
-          name: fieldName,
-          value: fieldValue,
-        },
-      ]);
+        embed.addFields([
+          {
+            name: fieldName,
+            value: fieldValue,
+          },
+        ]);
+      }
     }
 
     await interaction.reply({

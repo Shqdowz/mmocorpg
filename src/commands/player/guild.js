@@ -1,5 +1,8 @@
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const mongoose = require("mongoose");
+
+// -=+=- Schemas -=+=-
 const Guild = require("../../schemas/guildSchema");
 const User = require("../../schemas/userSchema");
 
@@ -152,9 +155,9 @@ module.exports = {
       } else {
         const guild = new Guild({
           _id: new mongoose.Types.ObjectId(),
-          name: name,
-          description: description,
-          lowerCaseName: lowerCaseName,
+          name,
+          description,
+          lowerCaseName,
           leader: authorProfile._id,
           members: [authorProfile._id],
         });

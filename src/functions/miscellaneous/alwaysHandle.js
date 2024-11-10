@@ -1,4 +1,4 @@
-// Dependencies
+// -=+=- Dependencies -=+=-
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = (client) => {
@@ -35,25 +35,25 @@ module.exports = (client) => {
       if (authorProfile.level % 3 == 1) {
         const contents = [
           "Quests",
-          "Raids",
-          "Cat",
-          "Dungeons",
+          "Level 2 gear",
+          "Market",
+          "Level 3 gear",
           "Guilds",
+          "Level 4 gear",
+          "Dungeons",
+          "Level 5 gear",
+          "Cat",
+          "Level 6 gear",
+          "Raids",
+          "Level 7 gear",
+          "Nothing", // add more from here
+          "Level 8 gear",
           "Nothing",
+          "Level 9 gear",
           "Nothing",
+          "Level 10 gear",
           "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
-          "Nothing",
+          "Level 11 gear",
           "Nothing",
           "Nothing",
           "Nothing",
@@ -85,7 +85,9 @@ module.exports = (client) => {
 
     await HandleLevelUp();
 
-    await client.handleCooldown("quests", interaction, authorProfile);
+    if (authorProfile.level >= 4) {
+      await client.handleCooldown("quests", interaction, authorProfile);
+    }
 
     // async function DecayCat() {
     //   await authorProfile.populate("cat");

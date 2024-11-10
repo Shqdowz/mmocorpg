@@ -1,8 +1,12 @@
-const User = require("../../schemas/userSchema");
-const Inventory = require("../../schemas/inventorySchema");
-const Loadout = require("../../schemas/loadoutSchema");
+// -=+=- Dependencies -=+=-
 const mongoose = require("mongoose");
 const { EmbedBuilder } = require("discord.js");
+
+// -=+=- Schemas -=+=-
+const Achievement = require("../../schemas/achievementSchema");
+const Inventory = require("../../schemas/inventorySchema");
+const Loadout = require("../../schemas/loadoutSchema");
+const User = require("../../schemas/userSchema");
 
 module.exports = {
   name: "interactionCreate",
@@ -13,6 +17,11 @@ module.exports = {
     }).populate("guild");
 
     if (!authorProfile) {
+      const achievement = new Achievement({
+        _id: new mongoose.Types.ObjectId(),
+      });
+      await achievement.save();
+
       const inventory = new Inventory({
         _id: new mongoose.Types.ObjectId(),
       });
@@ -28,8 +37,9 @@ module.exports = {
         userId: interaction.user.id,
         username: interaction.user.username,
 
-        loadout: loadout._id,
+        achievement: achievement._id,
         inventory: inventory._id,
+        loadout: loadout._id,
       });
       await authorProfile.save();
     }
@@ -40,12 +50,41 @@ module.exports = {
     }
 
     if (interaction.isChatInputCommand()) {
+      // If the author is blacklisted
+      if (authorProfile.blacklist) {
+        return await interaction.reply({
+          content:
+            "You are blacklisted from using the bot! This will not expire.",
+          ephemeral: true,
+        });
+      }
+
+      // If the author is banned
+      if (authorProfile.ban - Date.now() > 0) {
+        const next = Math.floor(new Date(authorProfile.ban.getTime()) / 1000);
+
+        return await interaction.reply({
+          content: `You are banned from using the bot! The ban will expire <t:${next}:R>.`,
+          ephemeral: true,
+        });
+      } else {
+        authorProfile.ban = null;
+        await authorProfile.save();
+      }
+    }
+
+    if (interaction.isChatInputCommand()) {
       const target = interaction.options.getUser("target");
 
       if (target) {
         let targetProfile = await User.findOne({ userId: target.id });
 
         if (!targetProfile) {
+          const achievement = new Achievement({
+            _id: new mongoose.Types.ObjectId(),
+          });
+          await achievement.save();
+
           const inventory = new Inventory({
             _id: new mongoose.Types.ObjectId(),
           });
@@ -61,39 +100,18 @@ module.exports = {
             userId: target.id,
             username: target.username,
 
-            loadout: loadout._id,
+            achievement: achievement._id,
             inventory: inventory._id,
+            loadout: loadout._id,
           });
           await targetProfile.save();
-        } else {
-          if (targetProfile.username != target.username) {
-            targetProfile.username = target.username;
-            await targetProfile.save();
-          }
+        }
+
+        if (targetProfile.username != target.username) {
+          targetProfile.username = target.username;
+          await targetProfile.save();
         }
       }
-    }
-
-    // If the author is blacklisted
-    if (authorProfile.blacklist) {
-      return await interaction.reply({
-        content:
-          "You are blacklisted from using the bot! This will not expire.",
-        ephemeral: true,
-      });
-    }
-
-    // If the author is banned
-    if (authorProfile.ban - Date.now() > 0) {
-      const next = Math.floor(new Date(authorProfile.ban.getTime()) / 1000);
-
-      return await interaction.reply({
-        content: `You are banned from using the bot! The ban will expire <t:${next}:R>.`,
-        ephemeral: true,
-      });
-    } else {
-      authorProfile.ban = null;
-      await authorProfile.save();
     }
 
     if (interaction.isChatInputCommand()) {

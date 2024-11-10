@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   ButtonBuilder,

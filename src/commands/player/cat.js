@@ -1,7 +1,10 @@
+// -=+=- Dependencies -=+=-
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const mongoose = require("mongoose");
+
+// -=+=- Schemas -=+=-
 const Cat = require("../../schemas/catSchema");
 const User = require("../../schemas/userSchema");
-const mongoose = require("mongoose");
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -53,9 +56,9 @@ module.exports = {
       userId: interaction.user.id,
     });
 
-    if (authorProfile.level < 10) {
+    if (authorProfile.level < 28) {
       return await interaction.reply({
-        content: `The cat feature unlocks at level 10! Please come back later.`,
+        content: `The cat feature unlocks at level 28! Please come back later.`,
         ephemeral: true,
       });
     }
@@ -283,7 +286,7 @@ module.exports = {
               : 1;
 
           const moCoins = Math.ceil(Math.random() * 25) + rewardMultiplier * 25;
-          authorProfile.mocoins += moCoins;
+          authorProfile["mo.coins"] += moCoins;
           await authorProfile.save();
           const experience =
             Math.ceil(Math.random() * 10) + rewardMultiplier * 10;
@@ -305,7 +308,7 @@ module.exports = {
             Math.ceil(Math.random() * 20 + 20) * (cat.friendshipLevel - 1);
           const experience =
             Math.ceil(Math.random() * 10 + 10) * (cat.friendshipLevel - 1);
-          authorProfile.mocoins += mocoins;
+          authorProfile["mo.coins"] += mocoins;
           authorProfile.experience += experience;
           await authorProfile.save();
 

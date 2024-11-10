@@ -1,5 +1,7 @@
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -13,10 +15,7 @@ module.exports = {
     });
 
     function LevelReached(requiredLevel) {
-      if (authorProfile.level >= requiredLevel) {
-        return "🟢";
-      }
-      return "🔴";
+      return authorProfile.level >= requiredLevel ? "🟢" : "🔴";
     }
 
     function CalculateTotalProgress(level) {
@@ -45,23 +44,29 @@ module.exports = {
       .setColor(client.getColor("level", authorProfile));
 
     const unlocks = [
-      [1, ["- Battles"]],
-      [4, ["- Quests"]],
-      [7, ["- Shrine Canyon battles"]],
-      [10, ["- Cat", "- Dungeons"]],
-      [13, ["- Overgrown Ruins battles"]],
-      [16, ["- Guilds"]],
-      [19, ["- Forest Barracks battles"]],
-      [22, ["- something1"]],
-      [25, ["- Spirit Caverns battles"]],
+      "Battles",
+      "Quests",
+      "Level 2 gear",
+      "Market",
+      "Level 3 gear",
+      "Guilds",
+      "Level 4 gear",
+      "Dungeons",
+      "Level 5 gear",
+      "Cat",
+      "Level 6 gear",
+      "Raids",
+      "Level 7 gear",
+      "Nothing", // add more from here
     ];
 
-    for (const unlock of unlocks) {
+    unlocks.forEach((unlock, index) => {
       embed.addFields({
-        name: `Level ${unlock[0]} ${LevelReached(unlock[0])}`,
-        value: unlock[1].map((u) => u).join("\n"),
+        name: `Level ${index * 3 + 1} ${LevelReached(index * 3 + 1)}`,
+        value: `- ${unlock}`,
+        inline: true,
       });
-    }
+    });
 
     await interaction.reply({ embeds: [embed] });
   },

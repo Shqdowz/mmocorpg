@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const { Schema, model } = require("mongoose");
 
 const userSchema = new Schema({
@@ -13,7 +14,6 @@ const userSchema = new Schema({
   requiredExperience: { type: Number, default: 20 },
 
   hitPoints: { type: Number, default: 100, min: 0, max: 500 },
-  maxHitPoints: { type: Number, default: 100 },
   speed: { type: Number, default: 1.0, min: 0.33, max: 5.0 },
 
   statPoints: { type: Number, default: 0 },
@@ -70,6 +70,8 @@ const userSchema = new Schema({
     ref: "Inventory",
   },
 
+  achievement: { type: Schema.Types.ObjectId, ref: "Achievement" },
+
   party: { type: Schema.Types.ObjectId, ref: "Party" },
 
   quests: { type: Array, default: [] },
@@ -96,7 +98,7 @@ const userSchema = new Schema({
   dailyStreak: { type: Number, default: 0 },
 
   settings: {
-    alwaysReady: { type: Boolean, default: false },
+    "Always Ready": { type: Boolean, default: false },
   },
 });
 

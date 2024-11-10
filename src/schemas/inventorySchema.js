@@ -1,10 +1,11 @@
+// -=+=- Dependencies -=+=-
 const { Schema, model } = require("mongoose");
 
 const inventorySchema = new Schema({
   _id: Schema.Types.ObjectId,
 
-  mocoins: { type: Number, default: 0 },
-  chaosCubes: { type: Number, default: 0 },
+  "mo.coins": { type: Number, default: 0 },
+  "Chaos Cubes": { type: Number, default: 0 },
 
   monsterDrops: {
     "Berserker Fist": { type: Number, default: 0 },
@@ -40,9 +41,9 @@ const inventorySchema = new Schema({
     large: { type: Number, default: 0 },
   },
 
-  medicines: { type: Number, default: 0 },
-  treats: { type: Number, default: 0 },
-  toys: { type: Number, default: 0 },
+  medicine: { type: Number, default: 0 },
+  treat: { type: Number, default: 0 },
+  toy: { type: Number, default: 0 },
 });
 
 module.exports = model("Inventory", inventorySchema, "inventories");

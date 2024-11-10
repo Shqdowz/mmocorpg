@@ -1,6 +1,8 @@
-const User = require("../../schemas/userSchema");
-const wait = require("node:timers/promises").setTimeout;
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder } = require("discord.js");
+
+// -=+=- Utility -=+=-
+const wait = require("node:timers/promises").setTimeout;
 
 module.exports = {
   data: new SlashCommandBuilder()

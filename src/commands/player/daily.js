@@ -1,5 +1,7 @@
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -33,7 +35,7 @@ module.exports = {
     const moCoins = Math.ceil(
       (Math.random() * 75 + 24) * Math.min(increase, 5)
     );
-    authorProfile.inventory.mocoins += moCoins;
+    authorProfile.inventory["mo.coins"] += moCoins;
 
     let crates;
     switch (Math.floor(increase)) {

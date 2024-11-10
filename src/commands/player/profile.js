@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,6 +8,7 @@ const {
   ComponentType,
 } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -23,11 +25,7 @@ module.exports = {
     const user = interaction.options.getUser("target") || interaction.user;
     const userProfile = await User.findOne({
       userId: user.id,
-    });
-
-    await userProfile.populate("guild");
-
-    const guildName = userProfile.guild ? userProfile.guild.name : "No guild";
+    }).populate("guild");
 
     async function GenerateEmbed() {
       const embed = new EmbedBuilder()
@@ -39,7 +37,9 @@ module.exports = {
             userProfile.experience
           } / ${userProfile.requiredExperience}**\n${client.getEmoji(
             "guild"
-          )} Guild: **${guildName}**`
+          )} Guild: **${
+            userProfile.guild ? userProfile.guild.name : "No guild"
+          }**`
         )
         .addFields([
           {
@@ -61,11 +61,7 @@ module.exports = {
         embed.addFields([
           {
             name: "Stat Points",
-            value: `${userProfile.statPoints}${
-              userProfile.statPoints
-                ? ` (click a button below to upgrade a stat!)`
-                : ``
-            }`,
+            value: `${userProfile.statPoints} (click a button below to upgrade a stat!)`,
             inline: true,
           },
         ]);
@@ -121,22 +117,19 @@ module.exports = {
           break;
       }
 
-      if (userProfile.statPoints) {
-        await interaction.editReply({
-          embeds: [await GenerateEmbed()],
-        });
-      } else {
-        collector.stop();
-      }
+      await interaction.editReply({
+        embeds: [await GenerateEmbed()],
+        components: await GenerateComponent(),
+      });
+
+      if (!userProfile.statPoints) collector.stop();
     });
 
-    collector.on("end", async (i) => {
-      try {
-        await interaction.editReply({
-          embeds: [await GenerateEmbed()],
-          components: [],
-        });
-      } catch (err) {}
+    collector.on("end", async () => {
+      await interaction.editReply({
+        embeds: [await GenerateEmbed()],
+        components: [],
+      });
     });
   },
 };

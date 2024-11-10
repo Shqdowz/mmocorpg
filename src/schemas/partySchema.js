@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const { Schema, model } = require("mongoose");
 
 const partySchema = new Schema({

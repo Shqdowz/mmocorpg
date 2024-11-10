@@ -212,12 +212,6 @@ const materialData = {
       ],
     },
   },
-
-  l9: {},
-
-  l10: {},
-
-  l11: {},
 };
 
 module.exports = (client) => {

@@ -1,7 +1,10 @@
+// -=+=- Dependencies -=+=-
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const mongoose = require("mongoose");
+
+// -=+=- Schemas -=+=-
 const Quest = require("../../schemas/questSchema");
 const Monster = require("../../schemas/monsterSchema");
-const mongoose = require("mongoose");
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -128,15 +131,14 @@ module.exports = {
       const commands = commandsArray.split(",");
 
       const quest = new Quest({
-        _id: new mongoose.Types.ObjectId(),
-        name: name,
-        description: description,
-        level: level,
-        difficulty: difficulty,
-        goal: goal,
-        scale: scale,
+        name,
+        description,
+        level,
+        difficulty,
+        goal,
+        scale,
 
-        commands: commands,
+        commands,
       });
       await quest.save();
 
@@ -154,18 +156,13 @@ module.exports = {
             inline: true,
           },
           {
-            name: "Level",
-            value: level.toString(),
-            inline: true,
-          },
-          {
-            name: "Goal",
-            value: goal.toString(),
+            name: "Level / Goal",
+            value: `${level} / ${goal}`,
             inline: true,
           },
           {
             name: "Scale",
-            value: scale.toString(),
+            value: `${scale}`,
             inline: true,
           },
         ])
@@ -195,29 +192,30 @@ module.exports = {
         return [name, parseInt(chance)];
       });
 
-      let coins;
-      let experience;
-      switch (tier) {
-        case "Standard":
-          coins = [1, 10];
-          experience = [0, 2];
-          break;
-        case "Elite":
-          coins = [10, 30];
-          experience = [2, 6];
-          break;
-        case "Boss":
-          coins = [30, 70];
-          experience = [6, 14];
-          break;
-        case "Champion":
-          coins = [70, 150];
-          experience = [14, 30];
-          break;
-      }
+      const rewardsMap = {
+        Standard: [
+          [1, 10],
+          [0, 2],
+        ],
+        Elite: [
+          [10, 30],
+          [2, 6],
+        ],
+        Boss: [
+          [30, 70],
+          [6, 14],
+        ],
+        Champion: [
+          [70, 150],
+          [14, 30],
+        ],
+      };
+
+      const coins = rewardsMap[tier][0];
+      const experience = rewardsMap[tier][1];
 
       drop = drop.split(",");
-      let dropInfo = {
+      const dropInfo = {
         name: drop[0],
         amount: parseFloat(drop[1]),
         mocoins: coins,
@@ -225,13 +223,12 @@ module.exports = {
       };
 
       const monster = new Monster({
-        name: name,
-        tier: tier,
-        hitPoints: hitPoints,
-        maxHitPoints: hitPoints,
-        speed: speed,
+        name,
+        tier,
+        hitPoints,
+        speed,
         thresholds: {},
-        skills: skills,
+        skills,
         drop: dropInfo,
       });
       await monster.save();
@@ -259,12 +256,16 @@ module.exports = {
               .join("\n"),
           },
           {
-            name: `Drop & Amount`,
-            value: `${drop[0]} & ${drop[1]}`,
+            name: `Drop: Amount`,
+            value: `${drop[0]}: ${drop[1]}`,
           },
           {
             name: `mo.coins & experience (min/max)`,
-            value: `${coins[0]}/${coins[1]} & ${experience[0]}/${experience[1]}`,
+            value: `${client.getEmoji("mocoin")} ${coins[0]}/${
+              coins[1]
+            }\n${client.getEmoji("experience")} ${experience[0]}/${
+              experience[1]
+            }`,
           },
         ])
         .setTimestamp()

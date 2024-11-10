@@ -1,21 +1,24 @@
+// -=+=- Dependencies -=+=-
 const { EmbedBuilder } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
+// -=+=- Utility -=+=-
 const wait = require("node:timers/promises").setTimeout;
 
 module.exports = (client) => {
   client.handleQuests = async (interaction, userProfile, extra) => {
     async function UpdateQuest(quest, progress) {
+      // Get the newest updated profile
+      userProfile = await User.findOne({ userId: userProfile.userId });
+
       quest.progress = Math.min(quest.goal, quest.progress + progress);
       quest.completed = quest.progress == quest.goal;
 
       await userProfile.markModified("quests");
       await userProfile.save();
     }
-
-    // Get the newest updated profile
-    userProfile = await User.findOne({ userId: userProfile.userId });
 
     if (userProfile.cat) await userProfile.populate("cat");
     if (userProfile.guild) await userProfile.populate("guild");
@@ -57,15 +60,14 @@ module.exports = (client) => {
           await UpdateQuest(quest, extra.player.stats["Kills Made"]);
           break;
         case "One on One":
-          for (const enemy of extra.enemies) {
-            if (
-              enemy.profile.copy.tier == "Boss" &&
-              enemy.profile.copy.hitPoints == 0
-            ) {
-              if (quest.progress < quest.goal) {
-                await UpdateQuest(quest, 1);
-              }
-            }
+          if (
+            extra.enemies.some(
+              (enemy) =>
+                enemy.profile.copy.tier == "Boss" &&
+                enemy.profile.copy.hitPoints == 0
+            )
+          ) {
+            await UpdateQuest(quest, 1);
           }
           break;
         case "Quick Work":

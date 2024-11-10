@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,6 +8,7 @@ const {
   ComponentType,
 } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -89,7 +91,7 @@ module.exports = {
 
       switch (reward[0]) {
         case "mo.coins":
-          authorProfile.inventory.mocoins += reward[1];
+          authorProfile.inventory["mo.coins"] += reward[1];
           await authorProfile.inventory.save();
 
           rewardText = `- ${client.getEmoji("mocoin")} ${reward[0]} x${
@@ -97,7 +99,7 @@ module.exports = {
           }`;
           break;
         case "chaos cubes":
-          authorProfile.inventory.chaosCubes += reward[1];
+          authorProfile.inventory["Chaos Cubes"] += reward[1];
           await authorProfile.inventory.save();
 
           rewardText = `- ${client.getEmoji("chaos_cube")} ${reward[0]} x${

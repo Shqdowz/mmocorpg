@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -70,11 +71,8 @@ module.exports = {
         break;
       case "commands":
         const commands = [];
-        let entry;
 
-        let commandId;
-        let commandName;
-        let commandDescription;
+        let commandId, commandName, commandDescription, entry;
 
         client.commands.forEach((command) => {
           commandId = command.id;
@@ -387,16 +385,13 @@ module.exports = {
         .setLabel("Next")
         .setStyle(ButtonStyle.Primary);
 
-      let reply;
-      try {
-        reply = await interaction.reply({
-          embeds: [embeds[0]],
-          components: [
-            new ActionRowBuilder().addComponents(previousButton, nextButton),
-          ],
-          ephemeral: true,
-        });
-      } catch (err) {}
+      const reply = await interaction.reply({
+        embeds: [embeds[0]],
+        components: [
+          new ActionRowBuilder().addComponents(previousButton, nextButton),
+        ],
+        ephemeral: true,
+      });
 
       const collector = reply.createMessageComponentCollector({
         componentType: ComponentType.Button,

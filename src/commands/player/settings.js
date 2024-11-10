@@ -1,5 +1,7 @@
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -10,7 +12,7 @@ module.exports = {
       option
         .setName("setting")
         .setDescription("The setting to change")
-        .addChoices({ name: "Always ready", value: "alwaysReady" })
+        .addChoices({ name: "Always ready", value: "Always Ready" })
     )
     .addBooleanOption((option) =>
       option
@@ -31,14 +33,6 @@ module.exports = {
     if (!setting) {
       const embed = new EmbedBuilder()
         .setTitle(`Your current settings`)
-        .addFields([
-          {
-            name: `Always ready`,
-            value: authorProfile.settings.alwaysReady
-              ? `🟢 Enabled`
-              : `🔴 Disabled`,
-          },
-        ])
         .setFooter({
           iconURL: interaction.user.displayAvatarURL(),
           text: `Requested by ${interaction.user.username}`,
@@ -46,28 +40,25 @@ module.exports = {
         .setTimestamp()
         .setColor(client.getColor("level", authorProfile));
 
+      for (const setting of Object.keys(authorProfile.settings)) {
+        embed.addFields({
+          name: `${setting}`,
+          value: `${authorProfile.settings[setting]}`,
+        });
+      }
+
       return await interaction.reply({ embeds: [embed], ephemeral: true });
     }
 
     authorProfile.settings[setting] = enabled;
     await authorProfile.save();
 
-    let text;
-    switch (setting) {
-      case "alwaysReady":
-        text = "Always ready";
-        break;
-      case "battleLabels":
-        text = "Battle labels";
-        break;
-    }
-
     const embed = new EmbedBuilder()
       .setTitle(`Setting changed!`)
       .addFields([
         {
-          name: text,
-          value: enabled ? "Enabled" : "Disabled",
+          name: `${setting}`,
+          value: `${authorProfile.settings[setting]}`,
         },
       ])
       .setFooter({

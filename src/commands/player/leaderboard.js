@@ -1,5 +1,8 @@
-const User = require("../../schemas/userSchema");
+// -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+
+// -=+=- Schemas -=+=-
+const User = require("../../schemas/userSchema");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -22,72 +25,60 @@ module.exports = {
     });
 
     const category = interaction.options.getString("category");
-    let users;
 
-    switch (category) {
-      case "Player level":
-        users = (await User.find({}))
-          .filter((user) => user.level > 1 || user.experience > 0)
-          .sort((a, b) => {
-            if (b.level === a.level) {
-              return b.experience - a.experience;
-            }
-            return b.level - a.level;
-          });
-        break;
-      case "Cat level":
-        users = (await User.find({}).populate("cat"))
-          .filter(
-            (user) =>
-              user.cat &&
-              (user.cat.friendshipLevel > 1 ||
-                user.cat.friendshipExperience > 0)
-          )
-          .sort((a, b) => {
-            if (b.cat.friendshipLevel == a.cat.friendshipLevel) {
-              return b.cat.friendshipExperience - a.cat.friendshipExperience;
-            }
-            return b.cat.friendshipLevel - a.cat.friendshipLevel;
-          });
-        break;
-      case "mo.coins":
-        users = (await User.find({}).populate("inventory"))
-          .filter((user) => user.inventory.mocoins > 0)
-          .sort((a, b) => {
-            return b.inventory.mocoins - a.inventory.mocoins;
-          });
-        break;
-    }
+    const usersMap = {
+      "Player level": (await User.find({}))
+        .filter((user) => user.level > 1 || user.experience > 0)
+        .sort((a, b) => {
+          if (b.level === a.level) {
+            return b.experience - a.experience;
+          }
+          return b.level - a.level;
+        }),
+      "Cat level": (await User.find({}).populate("cat"))
+        .filter(
+          (user) =>
+            user.cat &&
+            (user.cat.friendshipLevel > 1 || user.cat.friendshipExperience > 0)
+        )
+        .sort((a, b) => {
+          if (b.cat.friendshipLevel == a.cat.friendshipLevel) {
+            return b.cat.friendshipExperience - a.cat.friendshipExperience;
+          }
+          return b.cat.friendshipLevel - a.cat.friendshipLevel;
+        }),
+      "mo.coins": (await User.find({}).populate("inventory"))
+        .filter((user) => user.inventory["mo.coins"] > 0)
+        .sort((a, b) => {
+          return b.inventory["mo.coins"] - a.inventory["mo.coins"];
+        }),
+    };
 
-    const topUsers = users.slice(0, 10);
-    console.log(topUsers);
+    const allUsers = usersMap[category];
 
-    const authorIndex = users.findIndex(
+    const topUsers = allUsers.slice(0, 10);
+
+    const authorIndex = allUsers.findIndex(
       (user) => user._id.toString() == authorProfile._id.toString()
     );
-    const authorUser = users[authorIndex];
+    const authorUser = allUsers[authorIndex];
 
     const topUsersValues = topUsers.map((user, index) => {
-      let value;
-      switch (category) {
-        case "Player level":
-          value = `#${index + 1} - ${client.getEmoji("level")} **${
-            user.level
-          }**, ${client.getEmoji("experience")} **${user.experience}**`;
-          break;
-        case "Cat level":
-          value = `#${index + 1} - ${client.getEmoji("level")} **${
-            user.cat.friendshipLevel
-          }**, ${client.getEmoji("experience")} **${
-            user.cat.friendshipExperience
-          }**`;
-          break;
-        case "mo.coins":
-          value = `#${index + 1} - ${client.getEmoji("mocoin")} **${
-            user.inventory.mocoins
-          }**`;
-          break;
-      }
+      const valueMap = {
+        "Player level": `#${index + 1} - ${client.getEmoji("level")} **${
+          user.level
+        }**, ${client.getEmoji("experience")} **${user.experience}**`,
+        "Cat level": `#${index + 1} - ${client.getEmoji("level")} **${
+          user.cat.friendshipLevel
+        }**, ${client.getEmoji("experience")} **${
+          user.cat.friendshipExperience
+        }**`,
+        "mo.coins": `#${index + 1} - ${client.getEmoji("mocoin")} **${
+          user.inventory["mo.coins"]
+        }**`,
+      };
+
+      const value = valueMap[category];
 
       return {
         name: `**${user.username}**`,
@@ -112,7 +103,7 @@ module.exports = {
           break;
         case "mo.coins":
           authorUserValue = `${client.getEmoji("mocoin")} **${
-            authorUser.inventory.mocoins
+            authorUser.inventory["mo.coins"]
           }**`;
           break;
       }

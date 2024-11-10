@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,6 +8,7 @@ const {
   ComponentType,
 } = require("discord.js");
 
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 
 module.exports = {
@@ -20,65 +22,54 @@ module.exports = {
     });
 
     await authorProfile.populate("inventory");
-    // sort based on monster tier, into fields
 
     const inventory = authorProfile.inventory;
 
     const description = `${client.getEmoji("mocoin")} mo.coins: **${
-      inventory.mocoins
+      inventory["mo.coins"]
     }**\n${client.getEmoji("chaos_cube")} chaos cubes: **${
-      inventory.chaosCubes
+      inventory["Chaos Cubes"]
     }**`;
+
+    const dropsArray = client.getArray("drops");
 
     let drops = [];
 
-    for (const [drop, amount] of Object.entries(inventory.monsterDrops)) {
-      if (amount > 0) {
-        drops.push({
-          emoji: client.getEmoji(drop),
-          name: `${drop.split("_").join(" ")}`,
-          amount: amount,
-        });
+    ["standard", "elite", "boss"].forEach((tier) => {
+      for (const [drop, amount] of Object.entries(inventory.monsterDrops)) {
+        if (dropsArray[tier].includes(drop) && amount > 0)
+          drops.push({
+            emoji: client.getEmoji(drop),
+            name: drop,
+            amount: amount,
+          });
       }
-    }
+    });
 
-    function chunkArray(array, chunkSize) {
+    function CreateChunks(array) {
       const results = [];
       while (array.length) {
-        results.push(array.splice(0, chunkSize));
+        results.push(array.splice(0, 6));
       }
       return results;
     }
 
-    let dropChunks = [];
+    const chunks = drops.length ? CreateChunks(drops) : [null];
 
-    if (drops.length > 0) {
-      drops.sort((a, b) => a.name.localeCompare(b.name));
-
-      dropChunks = chunkArray(drops, 6);
-    } else {
-      dropChunks.push(null);
-    }
-
-    const embeds = dropChunks.map((chunk, index) => {
+    const embeds = chunks.map((chunk, index) => {
       return new EmbedBuilder()
         .setTitle(`${authorProfile.username}'s inventory`)
         .setDescription(description)
-        .addFields([
-          {
-            name: dropChunks[0]
-              ? `Monster loot (${index + 1}/${dropChunks.length})`
-              : `Monster loot`,
-            value: dropChunks[0]
-              ? chunk
-                  .map(
-                    (drop) => `${drop.emoji} ${drop.name}: **${drop.amount}**`
-                  )
-                  .join("\n")
-              : `No monster drops yet 😔`,
-            inline: true,
-          },
-        ])
+        .addFields({
+          name: chunks[0]
+            ? `Monster loot (${index + 1}/${chunks.length})`
+            : `Monster loot`,
+          value: chunks[0]
+            ? chunk
+                .map((drop) => `${drop.emoji} ${drop.name}: **${drop.amount}**`)
+                .join("\n")
+            : `No monster drops yet 😔`,
+        })
         .setFooter({
           iconURL: interaction.user.displayAvatarURL(),
           text: `Requested by ${interaction.user.username}`,
@@ -125,15 +116,12 @@ module.exports = {
       .setLabel("Next")
       .setStyle(ButtonStyle.Primary);
 
-    let reply;
-    try {
-      reply = await interaction.reply({
-        embeds: [embeds[0]],
-        components: [
-          new ActionRowBuilder().addComponents(previousButton, nextButton),
-        ],
-      });
-    } catch (err) {}
+    const reply = await interaction.reply({
+      embeds: [embeds[0]],
+      components: [
+        new ActionRowBuilder().addComponents(previousButton, nextButton),
+      ],
+    });
 
     const collector = reply.createMessageComponentCollector({
       componentType: ComponentType.Button,

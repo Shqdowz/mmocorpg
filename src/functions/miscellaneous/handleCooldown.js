@@ -1,3 +1,4 @@
+// -=+=- Schemas -=+=-
 const Quest = require("../../schemas/questSchema");
 
 module.exports = (client) => {

@@ -1,3 +1,4 @@
+// -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -6,9 +7,11 @@ const {
   ActionRowBuilder,
   ComponentType,
 } = require("discord.js");
+const mongoose = require("mongoose");
+
+// -=+=- Schemas -=+=-
 const User = require("../../schemas/userSchema");
 const Party = require("../../schemas/partySchema");
-const mongoose = require("mongoose");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -57,7 +60,7 @@ module.exports = {
         members: [
           {
             user: authorProfile._id,
-            ready: authorProfile.settings.alwaysReady,
+            ready: authorProfile.settings["Always Ready"],
           },
         ],
       });
@@ -75,18 +78,10 @@ module.exports = {
     if (target) {
       targetProfile = await User.findOne({ userId: target.id });
 
-      // If the target doesn't have a profile yet
-      if (!targetProfile) {
-        return await interaction.reply({
-          content: `The specified user does not have a profile yet.`,
-          ephemeral: true,
-        });
-      } else {
-        if (targetProfile.party) {
-          await targetProfile.populate("party");
-          await targetProfile.party.populate("leader");
-          await targetProfile.party.populate("members.user");
-        }
+      if (targetProfile.party) {
+        await targetProfile.populate("party");
+        await targetProfile.party.populate("leader");
+        await targetProfile.party.populate("members.user");
       }
     }
 
@@ -94,20 +89,23 @@ module.exports = {
 
     if (interaction.options.getSubcommand() == "info") {
       async function GenerateEmbed() {
-        let members = "";
-        authorProfile.party.members.forEach((member, index) => {
-          members += `${index + 1}. ${member.ready ? `🟢` : `🔴`} **${
-            member.user.username
-          }**\n`;
-        });
-
-        members += `Total members: **${authorProfile.party.members.length} / 3**`;
-
         const embed = new EmbedBuilder()
           .setTitle(`${author.username}'s party`)
           .addFields([
             { name: "Leader", value: authorProfile.party.leader.username },
-            { name: "Members", value: members },
+            {
+              name: "Members",
+              value: `${authorProfile.party.members
+                .map(
+                  (member, index) =>
+                    `${index + 1}. ${member.ready ? `🟢` : `🔴`} **${
+                      member.user.username
+                    }**`
+                )
+                .join("\n")}\nTotal members: **${
+                authorProfile.party.members.length
+              } / 3**`,
+            },
           ])
           .setFooter({
             iconURL: author.displayAvatarURL(),
@@ -196,6 +194,14 @@ module.exports = {
         });
       }
 
+      // If the author invites themselves
+      if (authorProfile.username == targetProfile.username) {
+        return await interaction.reply({
+          content: "You can't invite yourself!",
+          ephemeral: true,
+        });
+      }
+
       // If the author's party is full
       if (authorProfile.party.members.length >= maxMembers) {
         return await interaction.reply({
@@ -204,15 +210,7 @@ module.exports = {
         });
       }
 
-      // If the author invites themselves
       if (targetProfile.party) {
-        if (targetProfile._id.toString() == authorProfile._id.toString()) {
-          return await interaction.reply({
-            content: "You can't invite yourself!",
-            ephemeral: true,
-          });
-        }
-
         // If the author invites someone that is already in their party
         if (
           targetProfile.party._id.toString() ==
@@ -376,7 +374,7 @@ module.exports = {
       }
 
       // If the author tries to kick themselves
-      if (targetProfile._id.toString() == authorProfile._id.toString()) {
+      if (targetProfile.username == authorProfile.username) {
         return await interaction.reply({
           content: "You can't kick yourself!",
           ephemeral: true,
