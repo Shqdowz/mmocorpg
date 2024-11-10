@@ -71,13 +71,13 @@ module.exports = {
 
     function AffectedText(player) {
       const deadEmoji =
-        player.profile.copy.hitPoints === 0
+        player.hitPoints == 0
           ? player.user
             ? client.getEmoji("player_dead") + " "
             : client.getEmoji("monster_dead") + " "
           : "";
 
-      return `- ${deadEmoji}\`[${player.profile.copy.level}]\` ${player.name}:`;
+      return `- ${deadEmoji}\`[${player.level}]\` ${player.name}:`;
     }
 
     function MapPlayers(players) {
@@ -131,33 +131,29 @@ module.exports = {
         user: user,
         group: group,
 
-        profile: {
-          copy: {
-            level: profile.level,
-            hitPoints: profile.hitPoints,
-            maxHitPoints: profile.hitPoints,
-            speed: profile.speed,
-            gear: {
-              active: {
-                list: profile.gear.active,
-                equipped: [...currentLoadout.gear.active],
-              },
-              passive: {
-                list: profile.gear.passive,
-                equipped: [...currentLoadout.gear.passive],
-              },
-              weapon: {
-                list: profile.gear.weapon,
-                equipped: [...currentLoadout.gear.weapon],
-              },
-            },
-          },
-          original: profile,
-        },
-
+        level: profile.level,
+        hitpoints: profile.hitPoints,
         speed: speed,
         interval: interval,
         next: next,
+
+        maxHitPoints: profile.hitPoints,
+        baseSpeed: profile.speed,
+
+        gear: {
+          active: {
+            list: profile.gear.active,
+            equipped: [...currentLoadout.gear.active],
+          },
+          passive: {
+            list: profile.gear.passive,
+            equipped: [...currentLoadout.gear.passive],
+          },
+          weapon: {
+            list: profile.gear.weapon,
+            equipped: [...currentLoadout.gear.weapon],
+          },
+        },
 
         stats: {
           "Damage Dealt": 0,
@@ -226,21 +222,19 @@ module.exports = {
         user: null,
         group: group,
 
-        profile: {
-          copy: {
-            level: newEnemy.level,
-            hitPoints: newEnemy.hitPoints,
-            maxHitPoints: newEnemy.hitPoints,
-            speed: newEnemy.speed,
-            skills: newEnemy.skills,
-            tier: newEnemy.tier,
-            drop: newEnemy.drop,
-          },
-        },
-
+        level: newEnemy.level,
+        hitPoints: newEnemy.hitPoints,
         speed: newEnemy.speed,
         interval: ToFixedFloat(1 / newEnemy.speed),
         next: time + ToFixedFloat(1 / newEnemy.speed),
+
+        maxHitPoints: newEnemy.hitPoints,
+        baseSpeed: newEnemy.speed,
+
+        skills: newEnemy.skills,
+
+        tier: newEnemy.tier,
+        drop: newEnemy.drop,
 
         stats: {
           "Damage Dealt": 0,
@@ -256,9 +250,9 @@ module.exports = {
 
       if (from) {
         if (name == "Lil Grunt" && from.name == "Lil Grunt") {
-          enemy.profile.copy.level = from.profile.copy.level;
-          enemy.profile.copy.hitPoints = from.profile.copy.hitPoints;
-          enemy.profile.copy.maxHitPoints = from.profile.copy.maxHitPoints;
+          enemy.level = from.level;
+          enemy.hitPoints = from.hitPoints;
+          enemy.maxHitPoints = from.maxHitPoints;
         } else if (name == "Chicken" || name == "Shelldon" || name == "Wolf") {
           const gearTypeMap = {
             Chicken: ["Chicken Stick", "weapon"],
@@ -268,15 +262,11 @@ module.exports = {
 
           const [gear, type] = gearTypeMap[name];
 
-          enemy.profile.copy.level = Math.max(
-            1,
-            10 * from.profile.copy.gear[type][gear] - 10
+          enemy.level = Math.max(1, 10 * from.gear[type][gear] - 10);
+          enemy.maxHitPoints = Math.round(
+            enemy.maxHitPoints * GetMonsterScaling(enemy.level)
           );
-          enemy.profile.copy.maxHitPoints = Math.round(
-            enemy.profile.copy.maxHitPoints *
-              GetMonsterScaling(enemy.profile.copy.level)
-          );
-          enemy.profile.copy.hitPoints = enemy.profile.copy.maxHitPoints;
+          enemy.hitPoints = enemy.maxHitPoints;
 
           enemy.thresholds.ownerId = from.id;
         } else {
@@ -288,12 +278,11 @@ module.exports = {
               (averageLevel - 3)
           );
 
-          enemy.profile.copy.level = enemyLevel;
-          enemy.profile.copy.maxHitPoints = Math.round(
-            enemy.profile.copy.maxHitPoints *
-              GetMonsterScaling(enemy.profile.copy.level)
+          enemy.level = enemyLevel;
+          enemy.maxHitPoints = Math.round(
+            enemy.maxHitPoints * GetMonsterScaling(enemy.level)
           );
-          enemy.profile.copy.hitPoints = enemy.profile.copy.maxHitPoints;
+          enemy.hitPoints = enemy.maxHitPoints;
         }
       } else {
         const enemyLevel = Math.max(
@@ -304,12 +293,11 @@ module.exports = {
             (averageLevel - 3)
         );
 
-        enemy.profile.copy.level = enemyLevel;
-        enemy.profile.copy.maxHitPoints = Math.round(
-          enemy.profile.copy.maxHitPoints *
-            GetMonsterScaling(enemy.profile.copy.level)
+        enemy.level = enemyLevel;
+        enemy.maxHitPoints = Math.round(
+          enemy.maxHitPoints * GetMonsterScaling(enemy.level)
         );
-        enemy.profile.copy.hitPoints = enemy.profile.copy.maxHitPoints;
+        enemy.hitPoints = enemy.maxHitPoints;
       }
 
       players.push(enemy);
@@ -407,7 +395,7 @@ module.exports = {
 
     let averageLevel = 0;
     for (ally of allies) {
-      averageLevel += ally.profile.copy.level;
+      averageLevel += ally.level;
     }
     averageLevel = Math.round(averageLevel / allies.length);
 
@@ -465,7 +453,7 @@ module.exports = {
 
       const turnEmbed = new EmbedBuilder()
         .setTitle(
-          `${overtime ? `⏰ ` : `\0`}\`[${player.profile.copy.level}]\` ${
+          `${overtime ? `⏰ ` : `\0`}\`[${player.level}]\` ${
             player.name
           }'s turn!${
             player.user ? ` (ends <t:${next}:R>)` : `\0`
@@ -491,7 +479,7 @@ module.exports = {
               .slice(1, players.length + 1)
               .map(
                 (player) =>
-                  `\`[${player.profile.copy.level}]\` ${
+                  `\`[${player.level}]\` ${
                     player.name
                   } (**${player.next.toFixed(2)}**)`
               )
@@ -504,7 +492,7 @@ module.exports = {
       let buttons = [];
 
       if (player.user) {
-        player.profile.copy.gear.active.equipped.forEach((gear, index) => {
+        player.gear.active.equipped.forEach((gear, index) => {
           if (gear) {
             let onCooldown = false;
             let gearCooldown = 0;
@@ -569,15 +557,12 @@ module.exports = {
           }
         }
 
-        let skills = [...player.profile.copy.skills];
+        let skills = [...player.skills];
 
         // Change skill chance if necessary
         switch (player.name) {
           case "Berserker":
-            if (
-              player.profile.copy.hitPoints <=
-              ToFixedFloat(player.profile.copy.maxHitPoints * 0.25)
-            ) {
+            if (player.hitPoints <= ToFixedFloat(player.maxHitPoints * 0.25)) {
               ChangeChance([
                 ["Axe Spin", 25],
                 ["Punch", 50],
@@ -637,10 +622,7 @@ module.exports = {
             }
             break;
           case "Heavy Spitter":
-            if (
-              player.profile.copy.hitPoints <=
-              ToFixedFloat(player.profile.copy.maxHitPoints * 0.5)
-            ) {
+            if (player.hitPoints <= ToFixedFloat(player.maxHitPoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 33],
                 ["Spit", 67],
@@ -695,10 +677,7 @@ module.exports = {
             }
             break;
           case "Lil Grenadier":
-            if (
-              player.profile.copy.hitPoints <=
-              ToFixedFloat(player.profile.copy.maxHitPoints * 0.5)
-            ) {
+            if (player.hitPoints <= ToFixedFloat(player.maxHitPoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 33],
                 ["Grenade Throw", 67],
@@ -714,10 +693,7 @@ module.exports = {
             }
             break;
           case "Lil Spitter":
-            if (
-              player.profile.copy.hitPoints <=
-              ToFixedFloat(player.profile.copy.maxHitPoints * 0.5)
-            ) {
+            if (player.hitPoints <= ToFixedFloat(player.maxHitPoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 50],
                 ["Spit", 50],
@@ -791,8 +767,7 @@ module.exports = {
               ephemeral: true,
             });
           } else {
-            active =
-              player.profile.copy.gear.active.equipped[i.customId.slice(0, 1)];
+            active = player.gear.active.equipped[i.customId.slice(0, 1)];
             collector.stop();
           }
         });
@@ -939,7 +914,7 @@ module.exports = {
           case "Damage":
             EffectValue = Math.round(EffectValue * GetIncRed(player, target));
             realDamage = EffectValue;
-            EffectValue = Math.min(target.profile.copy.hitPoints, EffectValue);
+            EffectValue = Math.min(target.hitPoints, EffectValue);
             dealtDamage = EffectValue;
 
             if (gearArray.active.includes(effect.from))
@@ -958,7 +933,7 @@ module.exports = {
             target.thresholds["Wolf Stick"] += EffectValue;
 
             // Chicken Stick
-            if (EffectValue == target.profile.copy.hitPoints) {
+            if (EffectValue == target.hitPoints) {
               player.stats["Kills Made"] += 1;
               player.thresholds["Chicken Stick"] += 1;
               if (gearArray.active.includes(effect.from))
@@ -979,10 +954,7 @@ module.exports = {
               if (!hitEnemies.includes(target.id)) hitEnemies.push(target.id);
 
               // Monster Slugger
-              if (
-                target.profile.copy.hitPoints >=
-                Math.round(target.profile.copy.maxHitPoints * 0.33)
-              )
+              if (target.hitPoints >= Math.round(target.maxHitPoints * 0.33))
                 player.thresholds["Monster Slugger"] += 1;
 
               // Spinsickle
@@ -1019,11 +991,11 @@ module.exports = {
               target.thresholds.hit = true;
             }
 
-            target.profile.copy.hitPoints -= EffectValue;
+            target.hitPoints -= EffectValue;
             break;
           case "Healing":
             EffectValue = Math.min(
-              target.profile.copy.maxHitPoints - target.profile.copy.hitPoints,
+              target.maxHitPoints - target.hitPoints,
               EffectValue
             );
             doneHealing = EffectValue;
@@ -1041,15 +1013,12 @@ module.exports = {
             // Medicine Ball
             player.thresholds["Medicine Ball"] += EffectValue;
 
-            target.profile.copy.hitPoints += EffectValue;
+            target.hitPoints += EffectValue;
             break;
           case "Speed":
             target.speed = Math.max(
               0.33,
-              Math.min(
-                ToFixedFloat(target.profile.copy.speed + EffectValue),
-                3.0
-              )
+              Math.min(ToFixedFloat(target.baseSpeed + EffectValue), 3.0)
             );
 
             const oldInterval = target.interval;
@@ -1105,9 +1074,9 @@ module.exports = {
       }
 
       function FilterDeadPlayers() {
-        players = players.filter((player) => player.profile.copy.hitPoints > 0);
-        allies = allies.filter((ally) => ally.profile.copy.hitPoints > 0);
-        enemies = enemies.filter((enemy) => enemy.profile.copy.hitPoints > 0);
+        players = players.filter((player) => player.hitPoints > 0);
+        allies = allies.filter((ally) => ally.hitPoints > 0);
+        enemies = enemies.filter((enemy) => enemy.hitPoints > 0);
       }
 
       // -=+=- Handle active gear -=+=-
@@ -1121,7 +1090,7 @@ module.exports = {
         affected = [];
 
         if (player.thresholds["Active Ace"]) {
-          player.profile.copy.gear.active.list[active] += 1;
+          player.gear.active.list[active] += 1;
         }
 
         let minMax;
@@ -1132,7 +1101,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [14, 18],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+                  (0.8 + 0.2 * player.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1146,7 +1115,7 @@ module.exports = {
               if (Math.random() <= 0.5) {
                 stun = await CalculateEffect(
                   [0.4],
-                  0.95 + 0.05 * player.profile.copy.gear.active.list[active]
+                  0.95 + 0.05 * player.gear.active.list[active]
                 );
                 await AddEffect(player, victim, "Stun", active, stun, 1);
               } else {
@@ -1175,7 +1144,7 @@ module.exports = {
               1 -
               (await CalculateEffect(
                 [0.2],
-                0.95 + 0.05 * player.profile.copy.gear.active.list[active]
+                0.95 + 0.05 * player.gear.active.list[active]
               ));
             await AddEffect(
               player,
@@ -1202,8 +1171,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [28, 32],
-              (overtime ? 2 : 1) *
-                (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+              (overtime ? 2 : 1) * (0.8 + 0.2 * player.gear.active.list[active])
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1221,7 +1189,7 @@ module.exports = {
               1 +
               (await CalculateEffect(
                 [0.4],
-                0.95 + 0.05 * player.profile.copy.gear.active.list[active]
+                0.95 + 0.05 * player.gear.active.list[active]
               ));
             await AddEffect(
               player,
@@ -1253,7 +1221,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [8, 12],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+                  (0.8 + 0.2 * player.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1281,13 +1249,13 @@ module.exports = {
               staticDoT = await CalculateEffect(
                 [3, 7],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+                  (0.8 + 0.2 * player.gear.active.list[active])
               );
               await AddEffect(player, victim, "Damage", active, staticDoT, 3);
 
               speed = await CalculateEffect(
                 [-0.15],
-                0.9 + 0.1 * player.profile.copy.gear.active.list[active]
+                0.9 + 0.1 * player.gear.active.list[active]
               );
               await AddEffect(player, victim, "Speed", active, speed, 3);
 
@@ -1308,7 +1276,7 @@ module.exports = {
             staticHealing = await CalculateEffect(
               [16, 20],
               (overtime ? 0.5 : 1) *
-                (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+                (0.8 + 0.2 * player.gear.active.list[active])
             );
             await AddEffect(
               player,
@@ -1321,7 +1289,7 @@ module.exports = {
 
             speed = await CalculateEffect(
               [0.18],
-              0.9 + 0.1 * player.profile.copy.gear.active.list[active]
+              0.9 + 0.1 * player.gear.active.list[active]
             );
             await AddEffect(player, player, "Speed", active, speed, 2);
 
@@ -1342,7 +1310,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [14, 18],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.active.list[active])
+                  (0.8 + 0.2 * player.gear.active.list[active])
               );
               await AddEffect(
                 player,
@@ -1374,7 +1342,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
 
             for (const victim of opponents) {
@@ -1404,8 +1372,7 @@ module.exports = {
               if (Math.random() <= 0.5) {
                 staticDamage += await CalculateEffect(
                   [12, 12],
-                  (overtime ? 2 : 1) *
-                    GetMonsterScaling(player.profile.copy.level)
+                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
                 );
               }
             }
@@ -1413,8 +1380,7 @@ module.exports = {
             if (Math.random() <= 0.25) {
               staticDamage += await CalculateEffect(
                 [24, 24],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
             }
 
@@ -1456,8 +1422,7 @@ module.exports = {
             if (Math.random() <= chance) {
               staticDamage = await CalculateEffect(
                 [60, 60],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
               await AddEffect(
                 player,
@@ -1487,12 +1452,11 @@ module.exports = {
               case "Bone Smasher":
                 staticDamage = await CalculateEffect(
                   [15, 19],
-                  (overtime ? 2 : 1) *
-                    GetMonsterScaling(player.profile.copy.level)
+                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
                 );
                 stun = await CalculateEffect(
                   [0.16],
-                  0.995 + 0.005 * player.profile.copy.level
+                  0.995 + 0.005 * player.level
                 );
                 break;
               case "Wolf":
@@ -1503,14 +1467,14 @@ module.exports = {
                       0.2 *
                         allPlayers.find(
                           (p) => p.id == player.thresholds.ownerId
-                        ).profile.copy.gear.weapon.list["Wolf Stick"])
+                        ).gear.weapon.list["Wolf Stick"])
                 );
                 stun = await CalculateEffect(
                   [0.12],
                   0.995 +
                     0.05 *
                       allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .profile.copy.gear.weapon.list["Wolf Stick"]
+                        .gear.weapon.list["Wolf Stick"]
                 );
                 break;
             }
@@ -1550,15 +1514,11 @@ module.exports = {
             for (let i = 0; i < chargeStacks; i++) {
               staticDamage += await CalculateEffect(
                 [14, 18],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
             }
             speed = ToFixedFloat(0.2 * chargeStacks);
-            speed = await CalculateEffect(
-              [speed],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
 
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
             await AddEffect(player, player, "Speed", active, speed, 1);
@@ -1592,7 +1552,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [5, 10],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1609,11 +1569,7 @@ module.exports = {
             break;
           case "Dash": // big papa, bone smasher
             damageReduction =
-              1 -
-              (await CalculateEffect(
-                [0.1],
-                0.995 + 0.005 * player.profile.copy.level
-              ));
+              1 - (await CalculateEffect([0.1], 0.995 + 0.005 * player.level));
             await AddEffect(
               player,
               player,
@@ -1623,10 +1579,7 @@ module.exports = {
               2
             );
 
-            speed = await CalculateEffect(
-              [0.24],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([0.24], 0.99 + 0.01 * player.level);
             await AddEffect(player, player, "Speed", active, speed, 3);
 
             affected.push([
@@ -1645,11 +1598,7 @@ module.exports = {
             break;
           case "Decoy": // knight
             damageReduction =
-              1 -
-              (await CalculateEffect(
-                [0.26],
-                0.995 + 0.005 * player.profile.copy.level
-              ));
+              1 - (await CalculateEffect([0.26], 0.995 + 0.005 * player.level));
 
             await AddEffect(
               player,
@@ -1678,8 +1627,7 @@ module.exports = {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [...minMax],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
               await AddEffect(
                 player,
@@ -1693,7 +1641,7 @@ module.exports = {
               if (Math.random() <= 0.5) {
                 stun = await CalculateEffect(
                   [0.26],
-                  0.995 + 0.005 * player.profile.copy.level
+                  0.995 + 0.005 * player.level
                 );
                 await AddEffect(player, victim, "Stun", active, stun, 1);
               } else {
@@ -1721,8 +1669,7 @@ module.exports = {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [13, 17],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
               await AddEffect(
                 player,
@@ -1761,8 +1708,7 @@ module.exports = {
               if (Math.random() <= chance) {
                 staticDoT = await CalculateEffect(
                   [...minMax],
-                  (overtime ? 2 : 1) *
-                    GetMonsterScaling(player.profile.copy.level)
+                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
                 );
                 await AddEffect(player, victim, "Damage", active, staticDoT, 3);
 
@@ -1787,11 +1733,11 @@ module.exports = {
           case "Fire Vortex": // bone smasher
             staticDamage = await CalculateEffect(
               [13, 17],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             staticDoT = await CalculateEffect(
               [6, 10],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
 
             for (const victim of opponents) {
@@ -1827,8 +1773,7 @@ module.exports = {
 
               staticDamage = await CalculateEffect(
                 [6, 6],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
 
               await AddEffect(
@@ -1873,8 +1818,7 @@ module.exports = {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [8, 12],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
               await AddEffect(
                 player,
@@ -1905,7 +1849,7 @@ module.exports = {
               1 +
               (await CalculateEffect(
                 [damageIncrease],
-                0.995 + 0.005 * player.profile.copy.level
+                0.995 + 0.005 * player.level
               ));
             await AddEffect(
               player,
@@ -1917,10 +1861,7 @@ module.exports = {
             );
 
             speed = ToFixedFloat(-0.1 * player.thresholds.growStacks);
-            speed = await CalculateEffect(
-              [speed],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
             await AddEffect(player, player, "Speed", active, speed, 100);
 
             affected.push([
@@ -1959,12 +1900,11 @@ module.exports = {
               case "Boomer":
                 staticDamage = await CalculateEffect(
                   [15, 19],
-                  (overtime ? 2 : 1) *
-                    GetMonsterScaling(player.profile.copy.level)
+                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
                 );
                 stun = await CalculateEffect(
                   [0.12],
-                  0.995 + 0.005 * player.profile.copy.level
+                  0.995 + 0.005 * player.level
                 );
                 break;
               case "Shelldon":
@@ -1975,14 +1915,14 @@ module.exports = {
                       0.2 *
                         allPlayers.find(
                           (p) => p.id == player.thresholds.ownerId
-                        ).profile.copy.gear.active.list["Shelldon"])
+                        ).gear.active.list["Shelldon"])
                 );
                 stun = await CalculateEffect(
                   [0.12],
                   0.95 +
                     0.05 *
                       allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .profile.copy.gear.active.list["Shelldon"]
+                        .gear.active.list["Shelldon"]
                 );
                 break;
             }
@@ -2017,10 +1957,7 @@ module.exports = {
               .join("\n")}`;
             break;
           case "Jump Away": // executioner, jumper
-            speed = await CalculateEffect(
-              [0.3],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([0.3], 0.99 + 0.01 * player.level);
             await AddEffect(player, player, "Speed", active, speed, 2);
 
             affected.push([
@@ -2037,7 +1974,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [11, 15],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2071,7 +2008,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [18, 22],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2102,20 +2039,20 @@ module.exports = {
             break;
           case "Scavenge": // scavenger
             const lootIncrease = 1.1;
-            player.profile.copy.drop.amount = ToFixedFloat(
-              player.profile.copy.drop.amount * lootIncrease
+            player.drop.amount = ToFixedFloat(
+              player.drop.amount * lootIncrease
             );
-            player.profile.copy.drop.mocoins[0] = ToFixedFloat(
-              player.profile.copy.drop.mocoins[0] * lootIncrease
+            player.drop.mocoins[0] = ToFixedFloat(
+              player.drop.mocoins[0] * lootIncrease
             );
-            player.profile.copy.drop.mocoins[1] = ToFixedFloat(
-              player.profile.copy.drop.mocoins[1] * lootIncrease
+            player.drop.mocoins[1] = ToFixedFloat(
+              player.drop.mocoins[1] * lootIncrease
             );
-            player.profile.copy.drop.experience[0] = ToFixedFloat(
-              player.profile.copy.drop.experience[0] * lootIncrease
+            player.drop.experience[0] = ToFixedFloat(
+              player.drop.experience[0] * lootIncrease
             );
-            player.profile.copy.drop.experience[1] = ToFixedFloat(
-              player.profile.copy.drop.experience[1] * lootIncrease
+            player.drop.experience[1] = ToFixedFloat(
+              player.drop.experience[1] * lootIncrease
             );
 
             activeReply = `**${player.name}** used **${active}**! Their loot drops have increased by **10%**.`;
@@ -2133,7 +2070,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2157,8 +2094,7 @@ module.exports = {
             for (let i = 0; i < 2; i++) {
               staticDamage += await CalculateEffect(
                 [10, 14],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
             }
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
@@ -2190,14 +2126,11 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
-            speed = await CalculateEffect(
-              [speed],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
             await AddEffect(player, victim, "Speed", active, speed, duration);
 
             affected.push([
@@ -2215,7 +2148,7 @@ module.exports = {
 
             staticDamage = await CalculateEffect(
               [20, 20],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.profile.copy.level)
+              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2230,15 +2163,11 @@ module.exports = {
             break;
           case "Stumble": // scavenger
             staticDamage = Math.round(
-              Math.ceil(0.25 * player.profile.copy.maxHitPoints) *
-                (overtime ? 2 : 1)
+              Math.ceil(0.25 * player.maxHitPoints) * (overtime ? 2 : 1)
             );
             await AddEffect(player, player, "Damage", active, staticDamage, 1);
 
-            stun = await CalculateEffect(
-              [0.24],
-              0.995 + 0.005 * player.profile.copy.level
-            );
+            stun = await CalculateEffect([0.24], 0.995 + 0.005 * player.level);
             await AddEffect(player, player, "Stun", active, stun, 1);
 
             affected.push([
@@ -2254,10 +2183,7 @@ module.exports = {
             )}`;
             break;
           case "Swordplay": // lil beetle
-            speed = await CalculateEffect(
-              [0.16],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([0.16], 0.99 + 0.01 * player.level);
 
             for (const victim of teammates) {
               await AddEffect(player, victim, "Speed", active, speed, 2);
@@ -2275,16 +2201,12 @@ module.exports = {
               .join("\n")}`;
             break;
           case "Tail Whip": // slasher
-            stun = await CalculateEffect(
-              [0.28],
-              0.995 + 0.005 * player.profile.copy.level
-            );
+            stun = await CalculateEffect([0.28], 0.995 + 0.005 * player.level);
 
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [8, 12],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
 
               await AddEffect(
@@ -2314,11 +2236,7 @@ module.exports = {
             break;
           case "Teleport": // juggler
             damageIncrease =
-              1 +
-              (await CalculateEffect(
-                [0.52],
-                0.995 + 0.005 * player.profile.copy.level
-              ));
+              1 + (await CalculateEffect([0.52], 0.995 + 0.005 * player.level));
             await AddEffect(
               player,
               player,
@@ -2328,10 +2246,7 @@ module.exports = {
               2
             );
 
-            speed = await CalculateEffect(
-              [-0.24],
-              0.99 + 0.01 * player.profile.copy.level
-            );
+            speed = await CalculateEffect([-0.24], 0.99 + 0.01 * player.level);
             await AddEffect(player, player, "Speed", active, speed, 1);
 
             affected.push([
@@ -2356,8 +2271,7 @@ module.exports = {
 
                 staticDamage = await CalculateEffect(
                   [10, 14],
-                  (overtime ? 2 : 1) *
-                    GetMonsterScaling(player.profile.copy.level)
+                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
                 );
                 await AddEffect(
                   player,
@@ -2398,7 +2312,7 @@ module.exports = {
               speed = ToFixedFloat(victims.length * 0.28);
               speed = await CalculateEffect(
                 [speed],
-                0.99 + 0.01 * player.profile.copy.level
+                0.99 + 0.01 * player.level
               );
               await AddEffect(player, player, "Speed", active, speed, 1);
 
@@ -2435,7 +2349,7 @@ module.exports = {
 
         if (player.thresholds["Active Ace"]) {
           player.thresholds["Active Ace"] = false;
-          player.profile.copy.gear.active.list[active] -= 1;
+          player.gear.active.list[active] -= 1;
         }
 
         FilterDeadPlayers();
@@ -2459,7 +2373,7 @@ module.exports = {
             case "Active Ace":
               chance = await CalculateEffect(
                 [0.1],
-                0.8 + 0.2 * player.profile.copy.gear.passive.list[passive]
+                0.8 + 0.2 * player.gear.passive.list[passive]
               );
 
               if (Math.random() <= chance) {
@@ -2471,7 +2385,7 @@ module.exports = {
             case "Bunch of Dice":
               chance = await CalculateEffect(
                 [0.25],
-                0.8 + 0.2 * player.profile.copy.gear.passive.list[passive]
+                0.8 + 0.2 * player.gear.passive.list[passive]
               );
 
               if (Math.random() <= chance) {
@@ -2491,7 +2405,7 @@ module.exports = {
                 staticDamage += await CalculateEffect(
                   [15, 15],
                   (overtime ? 2 : 1) *
-                    (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
+                    (0.8 + 0.2 * player.gear.passive.list[passive])
                 );
               }
 
@@ -2521,7 +2435,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [4, 6],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
+                  (0.8 + 0.2 * player.gear.passive.list[passive])
               );
 
               for (const victim of teammates) {
@@ -2554,7 +2468,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [4, 6],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
+                  (0.8 + 0.2 * player.gear.passive.list[passive])
               );
 
               for (const victim of opponents) {
@@ -2588,7 +2502,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [activeDamage * percentage, activeDamage * percentage],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
+                  (0.8 + 0.2 * player.gear.passive.list[passive])
               );
 
               await AddEffect(
@@ -2619,7 +2533,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [6, 10],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.passive.list[passive])
+                  (0.8 + 0.2 * player.gear.passive.list[passive])
               );
               await AddEffect(
                 player,
@@ -2632,7 +2546,7 @@ module.exports = {
 
               stun = await CalculateEffect(
                 [0.12],
-                0.95 + 0.05 * player.profile.copy.gear.passive.list[passive]
+                0.95 + 0.05 * player.gear.passive.list[passive]
               );
               await AddEffect(player, victim, "Stun", "Zap in a Box", stun, 1);
 
@@ -2663,8 +2577,8 @@ module.exports = {
         }
       }
 
-      if (player.user && player.profile.copy.gear.passive.equipped.length > 0) {
-        await HandlePassives(player.profile.copy.gear.passive.equipped);
+      if (player.user && player.gear.passive.equipped.length > 0) {
+        await HandlePassives(player.gear.passive.equipped);
       }
 
       player.stats["Turns Taken"] += 1;
@@ -2690,7 +2604,7 @@ module.exports = {
         affected = [];
 
         if (player.thresholds["Bunch of Dice"]) {
-          player.profile.copy.gear.weapon.list[weapon] += 1;
+          player.gear.weapon.list[weapon] += 1;
         }
 
         switch (weapon) {
@@ -2725,7 +2639,7 @@ module.exports = {
               staticHealing = await CalculateEffect(
                 [15, 15],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
+                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
               );
               await AddEffect(
                 player,
@@ -2761,19 +2675,16 @@ module.exports = {
             player.thresholds["Monster Slugger"] -= 12;
 
             for (const victim of opponents) {
-              if (
-                victim.profile.copy.hitPoints >=
-                Math.round(victim.profile.copy.maxHitPoints * 0.33)
-              ) {
+              if (victim.hitPoints >= Math.round(victim.maxHitPoints * 0.33)) {
                 stun = await CalculateEffect(
                   [1],
-                  0.95 + 0.05 * player.profile.copy.gear.weapon.list[weapon]
+                  0.95 + 0.05 * player.gear.weapon.list[weapon]
                 );
                 await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
                 speed = await CalculateEffect(
                   [-0.22],
-                  0.9 + 0.1 * player.profile.copy.gear.weapon.list[weapon]
+                  0.9 + 0.1 * player.gear.weapon.list[weapon]
                 );
                 await AddEffect(player, victim, "Speed", weapon, speed, 3);
 
@@ -2797,22 +2708,22 @@ module.exports = {
             break;
           case "Portable Portal":
             const requiredTurns =
-              GetCooldown(player.profile.copy.gear.active.equipped[0]) + 2;
+              GetCooldown(player.gear.active.equipped[0]) + 2;
             if (player.thresholds["Portable Portal"] < requiredTurns) break;
 
             player.thresholds["Portable Portal"] -= requiredTurns;
 
             weaponReply = `**${player.name}**'s **Portable Portal** has reached its activation threshold!`;
 
-            const equippedOn1 = player.profile.copy.gear.active.equipped[0];
-            const temp = player.profile.copy.gear.active.list[equippedOn1];
-            player.profile.copy.gear.active.list[equippedOn1] =
-              player.profile.copy.gear.weapon.list[weapon];
+            const equippedOn1 = player.gear.active.equipped[0];
+            const temp = player.gear.active.list[equippedOn1];
+            player.gear.active.list[equippedOn1] =
+              player.gear.weapon.list[weapon];
 
             setTimeout(async () => {
               await HandleActive(equippedOn1, false);
 
-              player.profile.copy.gear.active.list[equippedOn1] = temp;
+              player.gear.active.list[equippedOn1] = temp;
             }, 50);
             break;
           case "Spinsickle":
@@ -2826,7 +2737,7 @@ module.exports = {
 
             speed = await CalculateEffect(
               [0.8],
-              0.9 + 0.1 * player.profile.copy.gear.weapon.list[weapon]
+              0.9 + 0.1 * player.gear.weapon.list[weapon]
             );
             await AddEffect(player, player, "Speed", weapon, speed, 100);
 
@@ -2860,7 +2771,7 @@ module.exports = {
               staticDamage = await CalculateEffect(
                 [30, 30],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
+                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
               );
               await AddEffect(
                 player,
@@ -2873,7 +2784,7 @@ module.exports = {
 
               stun = await CalculateEffect(
                 [1.2],
-                0.95 + 0.05 * player.profile.copy.gear.weapon.list[weapon]
+                0.95 + 0.05 * player.gear.weapon.list[weapon]
               );
               await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
@@ -2911,7 +2822,7 @@ module.exports = {
               staticDoT = await CalculateEffect(
                 [15, 15],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.profile.copy.gear.weapon.list[weapon])
+                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
               );
 
               await AddEffect(player, victim, "Damage", weapon, staticDoT, 3);
@@ -2959,7 +2870,7 @@ module.exports = {
 
         if (player.thresholds["Bunch of Dice"]) {
           player.thresholds["Bunch of Dice"] = false;
-          player.profile.copy.gear.weapon.list[weapon] -= 1;
+          player.gear.weapon.list[weapon] -= 1;
         }
 
         FilterDeadPlayers();
@@ -2967,7 +2878,7 @@ module.exports = {
 
       // Weapon gear
       if (player.user) {
-        await HandleWeapon(player.profile.copy.gear.weapon.equipped[0]);
+        await HandleWeapon(player.gear.weapon.equipped[0]);
       }
 
       if (bunchOfDiceActivated) player.thresholds["Bunch of Dice"] = true;
@@ -3005,10 +2916,7 @@ module.exports = {
             )) {
               const threshold = player.thresholds[hp_x];
 
-              if (
-                player.profile.copy.hitPoints <
-                threshold * player.profile.copy.maxHitPoints
-              ) {
+              if (player.hitPoints < threshold * player.maxHitPoints) {
                 player.thresholds[hp_x] = -1;
 
                 let eggs = 0;
@@ -3031,18 +2939,12 @@ module.exports = {
           case "Berserker":
             const threshold = player.thresholds.hp_1;
 
-            if (
-              player.profile.copy.hitPoints <
-              threshold * player.profile.copy.maxHitPoints
-            ) {
+            if (player.hitPoints < threshold * player.maxHitPoints) {
               player.thresholds.hp_1 = -1;
 
               damageIncrease =
                 1 +
-                (await CalculateEffect(
-                  [0.5],
-                  0.995 + 0.005 * player.profile.copy.level
-                ));
+                (await CalculateEffect([0.5], 0.995 + 0.005 * player.level));
               await AddEffect(
                 player,
                 player,
@@ -3052,10 +2954,7 @@ module.exports = {
                 100
               );
 
-              speed = await CalculateEffect(
-                [0.24],
-                0.99 + 0.01 * player.profile.copy.level
-              );
+              speed = await CalculateEffect([0.24], 0.99 + 0.01 * player.level);
               await AddEffect(
                 player,
                 player,
@@ -3088,10 +2987,7 @@ module.exports = {
             )) {
               const threshold = player.thresholds[hp_x];
 
-              if (
-                player.profile.copy.hitPoints <
-                threshold * player.profile.copy.maxHitPoints
-              ) {
+              if (player.hitPoints < threshold * player.maxHitPoints) {
                 player.thresholds[hp_x] = -1;
 
                 let spawned = [];
@@ -3124,13 +3020,12 @@ module.exports = {
             }
             break;
           case "Boomer":
-            if (player.profile.copy.hitPoints == player.thresholds.hp_1) {
+            if (player.hitPoints == player.thresholds.hp_1) {
               player.thresholds.hp_1 = -1;
 
               staticDamage = await CalculateEffect(
                 [20, 20],
-                (overtime ? 2 : 1) *
-                  GetMonsterScaling(player.profile.copy.level)
+                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
               );
 
               for (const victim of opponents) {
@@ -3255,9 +3150,9 @@ module.exports = {
       if (enemies.length == 0) {
         let chance = 50;
         for (const enemy of allEnemies) {
-          if (enemy.profile.copy.tier == "Standard") chance -= 1;
-          if (enemy.profile.copy.tier == "Elite") chance -= 4;
-          if (enemy.profile.copy.tier == "Boss") chance -= 10;
+          if (enemy.tier == "Standard") chance -= 1;
+          if (enemy.tier == "Elite") chance -= 4;
+          if (enemy.tier == "Boss") chance -= 10;
         }
         chance = Math.max(chance, 10);
 
@@ -3269,7 +3164,7 @@ module.exports = {
         if (Math.ceil(Math.random() * chance) == 1) {
           const unlocked = [
             ...["active", "passive", "weapon"].flatMap((type) =>
-              FilterGear(ally.profile.copy.gear[type].list)
+              FilterGear(ally.gear[type].list)
             ),
             ...ally.profile.original.inventory.blueprints,
           ];
@@ -3284,22 +3179,21 @@ module.exports = {
       }
 
       for (const enemy of allEnemies) {
-        if (enemy.profile.copy.hitPoints == 0 && enemy.name != "Scorcher Egg") {
-          const emoji = client.getEmoji(enemy.profile.copy.drop.name);
-          const levelMultiplier = 0.9 + 0.1 * enemy.profile.copy.level;
+        if (enemy.hitPoints == 0 && enemy.name != "Scorcher Egg") {
+          const emoji = client.getEmoji(enemy.drop.name);
+          const levelMultiplier = 0.9 + 0.1 * enemy.level;
 
-          const dropAmount = enemy.profile.copy.drop.amount * levelMultiplier;
+          const dropAmount = enemy.drop.amount * levelMultiplier;
           const totalDrops =
             Math.floor(dropAmount) + (Math.random() < dropAmount % 1 ? 1 : 0);
 
-          const [minMocoins, maxMocoins] = enemy.profile.copy.drop.mocoins;
+          const [minMocoins, maxMocoins] = enemy.drop.mocoins;
           mocoins += Math.round(
             (Math.random() * (maxMocoins - minMocoins) + minMocoins) *
               levelMultiplier
           );
 
-          const [minExperience, maxExperience] =
-            enemy.profile.copy.drop.experience;
+          const [minExperience, maxExperience] = enemy.drop.experience;
           experience += Math.round(
             (Math.random() * (maxExperience - minExperience) + minExperience) *
               levelMultiplier
@@ -3307,14 +3201,14 @@ module.exports = {
 
           if (totalDrops > 0) {
             const existingItem = loot.find(
-              (item) => item.name === enemy.profile.copy.drop.name
+              (item) => item.name === enemy.drop.name
             );
 
             if (existingItem) {
               existingItem.amount += totalDrops;
             } else {
               loot.push({
-                name: enemy.profile.copy.drop.name,
+                name: enemy.drop.name,
                 amount: totalDrops,
                 emoji: emoji,
               });
@@ -3392,7 +3286,7 @@ module.exports = {
           value: MapPlayers(
             allAllies
               .sort((a, b) => {
-                return b.profile.copy.hitPoints - a.profile.copy.hitPoints;
+                return b.hitPoints - a.hitPoints;
               })
               .slice(0, 6)
           ),
@@ -3402,7 +3296,7 @@ module.exports = {
           value: MapPlayers(
             allEnemies
               .sort((a, b) => {
-                return b.profile.copy.hitPoints - a.profile.copy.hitPoints;
+                return b.hitPoints - a.hitPoints;
               })
               .slice(0, 6)
           ),

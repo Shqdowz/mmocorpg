@@ -14,7 +14,6 @@ module.exports = {
     const busyUsers = await User.find({ isBusy: true });
     for (const user of busyUsers) {
       user.isBusy = false;
-      user.hitPoints = user.maxHitPoints;
       await user.save();
     }
 

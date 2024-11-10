@@ -43,9 +43,8 @@ module.exports = (client) => {
           break;
         case "By a Thread":
           if (
-            extra.player.profile.copy.hitPoints &&
-            extra.player.profile.copy.hitPoints <
-              extra.player.profile.copy.maxHitPoints * 0.2
+            extra.player.hitPoints &&
+            extra.player.hitPoints < extra.player.maxHitPoints * 0.2
           ) {
             await UpdateQuest(quest, 1);
           }
@@ -62,9 +61,7 @@ module.exports = (client) => {
         case "One on One":
           if (
             extra.enemies.some(
-              (enemy) =>
-                enemy.profile.copy.tier == "Boss" &&
-                enemy.profile.copy.hitPoints == 0
+              (enemy) => enemy.tier == "Boss" && enemy.hitPoints == 0
             )
           ) {
             await UpdateQuest(quest, 1);
@@ -77,7 +74,7 @@ module.exports = (client) => {
           break;
         case "Underdog":
           if (
-            extra.enemies.every((enemy) => enemy.profile.copy.hitPoints == 0) &&
+            extra.enemies.every((enemy) => enemy.hitPoints == 0) &&
             extra.player.stats["Damage Taken"] >
               extra.player.stats["Damage Dealt"]
           ) {
@@ -85,17 +82,12 @@ module.exports = (client) => {
           }
           break;
         case "Unscathed":
-          if (
-            extra.player.profile.copy.hitPoints ==
-            extra.player.profile.copy.maxHitPoints
-          ) {
+          if (extra.player.hitPoints == extra.player.maxHitPoints) {
             await UpdateQuest(quest, 1);
           }
           break;
         case "Unstoppable":
-          if (
-            extra.enemies.every((enemy) => enemy.profile.copy.hitPoints == 0)
-          ) {
+          if (extra.enemies.every((enemy) => enemy.hitPoints == 0)) {
             await UpdateQuest(quest, 1);
           } else {
             await UpdateQuest(quest, -quest.progress);

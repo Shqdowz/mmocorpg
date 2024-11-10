@@ -45,7 +45,7 @@ module.exports = {
           {
             name: "Stats",
             value: `${client.getEmoji("health")} HP: **${
-              userProfile.maxHitPoints
+              userProfile.hitPoints
             }**\n${client.getEmoji("speed")} SPD: **${userProfile.speed}**`,
             inline: true,
           },
@@ -77,7 +77,7 @@ module.exports = {
           .setLabel(`+8 HP`)
           .setEmoji(client.getEmoji("health"))
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(userProfile.maxHitPoints == 300);
+          .setDisabled(userProfile.hitPoints == 300);
         const speed = new ButtonBuilder()
           .setCustomId(`speed:${interaction.id}`)
           .setLabel(`+0.08 SPD`)
