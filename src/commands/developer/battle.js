@@ -125,6 +125,7 @@ module.exports = {
 
       const ally = {
         id: playerId,
+        index: playerId,
         name: name,
         user: user,
         group: group,
@@ -218,6 +219,7 @@ module.exports = {
 
       let enemy = {
         id: playerId,
+        index: playerId,
         name: `${newEnemy.name}`,
         user: null,
         group: group,
@@ -602,6 +604,11 @@ module.exports = {
               ChangeChance([
                 ["Charge Up", 0],
                 ["Charge", 100],
+              ]);
+            } else {
+              ChangeChance([
+                ["Charge Up", 67],
+                ["Charge", 33],
               ]);
             }
             break;
@@ -3077,16 +3084,12 @@ module.exports = {
       FilterDeadPlayers();
 
       // Check if any team has won
-      if (enemies.length == 0) {
+      if (!enemies.length || !allies.length) {
         gameEnded = true;
-        winners = allAllies.map((player) => player.name).join(", ");
+        winners = !enemies.length
+          ? allAllies.map((player) => player.name).join(", ")
+          : allEnemies.map((player) => player.name).join(", ");
         await thread.send(`Battle ended! Winners: **${winners}**`);
-      } else {
-        if (allies.length == 0) {
-          gameEnded = true;
-          winners = allEnemies.map((player) => player.name).join(", ");
-          await thread.send(`Battle ended! Winners: **${winners}**`);
-        }
       }
     }
 
@@ -3095,9 +3098,6 @@ module.exports = {
       if (a.next == b.next) return a.id - b.id;
       return a.next - b.next;
     });
-
-    // Save initial indices
-    players.forEach((player, index) => (player.index = index));
 
     // -=+=- Turn preparation -=+=-
     while (!gameEnded) {
@@ -3116,7 +3116,8 @@ module.exports = {
         }
       });
 
-      currentTime = players[0].next;
+      const currentPlayer = players[0];
+      currentTime = currentPlayer.next;
 
       // Handle overtime
       if (!overtime && currentTime >= maxTime) {
@@ -3130,7 +3131,7 @@ module.exports = {
       }
 
       // Handle turn
-      await HandleTurn(players[0]);
+      await HandleTurn(currentPlayer);
     }
 
     // -=+=- Loot drops -=+=-
