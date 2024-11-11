@@ -48,9 +48,9 @@ module.exports = {
           return b.cat.friendshipLevel - a.cat.friendshipLevel;
         }),
       "mo.coins": (await User.find({}).populate("inventory"))
-        .filter((user) => user.inventory["mo.coins"] > 0)
+        .filter((user) => user.inventory["mocoins"] > 0)
         .sort((a, b) => {
-          return b.inventory["mo.coins"] - a.inventory["mo.coins"];
+          return b.inventory["mocoins"] - a.inventory["mocoins"];
         }),
     };
 
@@ -58,10 +58,9 @@ module.exports = {
 
     const topUsers = allUsers.slice(0, 10);
 
-    const authorIndex = allUsers.findIndex(
+    const authorUser = allUsers.find(
       (user) => user._id.toString() == authorProfile._id.toString()
     );
-    const authorUser = allUsers[authorIndex];
 
     const topUsersValues = topUsers.map((user, index) => {
       const valueMap = {
@@ -74,40 +73,31 @@ module.exports = {
           user.cat.friendshipExperience
         }**`,
         "mo.coins": `#${index + 1} - ${client.getEmoji("mocoin")} **${
-          user.inventory["mo.coins"]
+          user.inventory["mocoins"]
         }**`,
       };
 
-      const value = valueMap[category];
-
       return {
         name: `**${user.username}**`,
-        value: value,
+        value: valueMap[category],
       };
     });
 
-    let authorUserValue;
-    if (authorUser) {
-      switch (category) {
-        case "Player level":
-          authorUserValue = `${client.getEmoji("level")} **${
-            authorUser.level
-          }**, ${client.getEmoji("experience")} **${authorUser.experience}**`;
-          break;
-        case "Cat level":
-          authorUserValue = `${client.getEmoji("level")} **${
-            authorUser.cat.friendshipLevel
-          }**, ${client.getEmoji("experience")} **${
-            authorUser.cat.friendshipExperience
-          }**`;
-          break;
-        case "mo.coins":
-          authorUserValue = `${client.getEmoji("mocoin")} **${
-            authorUser.inventory["mo.coins"]
-          }**`;
-          break;
-      }
-    }
+    const authorValueMap = {
+      "Player level": (authorUserValue = `${client.getEmoji("level")} **${
+        authorUser.level
+      }**, ${client.getEmoji("experience")} **${authorUser.experience}**`),
+      "Cat level": (authorUserValue = `${client.getEmoji("level")} **${
+        authorUser.cat.friendshipLevel
+      }**, ${client.getEmoji("experience")} **${
+        authorUser.cat.friendshipExperience
+      }**`),
+      "mo.coins": (authorUserValue = `${client.getEmoji("mocoin")} **${
+        authorUser.inventory["mocoins"]
+      }**`),
+    };
+
+    const authorUserValue = authorUser ? authorValueMap[category] : null;
 
     const embed = new EmbedBuilder()
       .setTitle(`${category} leaderboard`)

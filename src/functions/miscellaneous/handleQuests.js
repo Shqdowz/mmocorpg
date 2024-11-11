@@ -9,6 +9,8 @@ const wait = require("node:timers/promises").setTimeout;
 
 module.exports = (client) => {
   client.handleQuests = async (interaction, userProfile, extra) => {
+    if (!userProfile.quests) return;
+
     async function UpdateQuest(quest, progress) {
       // Get the newest updated profile
       userProfile = await User.findOne({ userId: userProfile.userId });

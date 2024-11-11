@@ -23,12 +23,10 @@ module.exports = {
 
     await authorProfile.populate("inventory");
 
-    const inventory = authorProfile.inventory;
-
     const description = `${client.getEmoji("mocoin")} mo.coins: **${
-      inventory["mo.coins"]
+      authorProfile.inventory["mocoins"]
     }**\n${client.getEmoji("chaos_cube")} chaos cubes: **${
-      inventory["Chaos Cubes"]
+      authorProfile.inventory["Chaos Cubes"]
     }**`;
 
     const dropsArray = client.getArray("drops");
@@ -36,7 +34,9 @@ module.exports = {
     let drops = [];
 
     ["standard", "elite", "boss"].forEach((tier) => {
-      for (const [drop, amount] of Object.entries(inventory.monsterDrops)) {
+      for (const [drop, amount] of Object.entries(
+        authorProfile.inventory.monsterDrops
+      )) {
         if (dropsArray[tier].includes(drop) && amount > 0)
           drops.push({
             emoji: client.getEmoji(drop),
@@ -86,12 +86,13 @@ module.exports = {
           {
             name: `Blueprints`,
             value:
-              inventory.blueprints.map((blueprint) => blueprint).join(", ") ||
-              `None`,
+              authorProfile.inventory.blueprints
+                .map((blueprint) => blueprint)
+                .join(", ") || `None`,
           },
           {
             name: "Pet items",
-            value: `💊 Medicines: **${inventory.medicines}**\n🍬 Treats: **${inventory.treats}**\n🧶 Toys: **${inventory.toys}**`,
+            value: `💊 Medicines: **${authorProfile.inventory.medicine}**\n🍬 Treats: **${authorProfile.inventory.treat}**\n🧶 Toys: **${authorProfile.inventory.toy}**`,
             inline: true,
           },
         ])
@@ -157,13 +158,11 @@ module.exports = {
       previousButton.setDisabled(true);
       nextButton.setDisabled(true);
 
-      try {
-        await interaction.editReply({
-          components: [
-            new ActionRowBuilder().addComponents(previousButton, nextButton),
-          ],
-        });
-      } catch (err) {}
+      await interaction.editReply({
+        components: [
+          new ActionRowBuilder().addComponents(previousButton, nextButton),
+        ],
+      });
     });
   },
 };

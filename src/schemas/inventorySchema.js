@@ -4,7 +4,7 @@ const { Schema, model } = require("mongoose");
 const inventorySchema = new Schema({
   _id: Schema.Types.ObjectId,
 
-  "mo.coins": { type: Number, default: 0 },
+  mocoins: { type: Number, default: 0 },
   "Chaos Cubes": { type: Number, default: 0 },
 
   monsterDrops: {

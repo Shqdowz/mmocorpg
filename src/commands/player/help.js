@@ -428,13 +428,11 @@ module.exports = {
         previousButton.setDisabled(true);
         nextButton.setDisabled(true);
 
-        try {
-          await interaction.editReply({
-            components: [
-              new ActionRowBuilder().addComponents(previousButton, nextButton),
-            ],
-          });
-        } catch (err) {}
+        await interaction.editReply({
+          components: [
+            new ActionRowBuilder().addComponents(previousButton, nextButton),
+          ],
+        });
       });
     } else {
       await interaction.reply({ embeds: [embeds[0]], ephemeral: true });

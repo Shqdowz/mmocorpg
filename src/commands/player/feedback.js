@@ -42,10 +42,9 @@ module.exports = {
       .setColor(type == "Suggestion" ? "Green" : "Red");
 
     const guild = await client.guilds.fetch("1250387871517638708");
-    const channel =
-      type == "Suggestion"
-        ? await guild.channels.fetch("1253673162961457153")
-        : await guild.channels.fetch("1260880403158401065");
+    const channel = await guild.channels.fetch(
+      type == "Suggestion" ? "1253673162961457153" : "1260880403158401065"
+    );
 
     await channel.send({ embeds: [embed] });
 

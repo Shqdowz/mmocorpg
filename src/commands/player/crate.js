@@ -91,7 +91,7 @@ module.exports = {
 
       switch (reward[0]) {
         case "mo.coins":
-          authorProfile.inventory["mo.coins"] += reward[1];
+          authorProfile.inventory["mocoins"] += reward[1];
           await authorProfile.inventory.save();
 
           rewardText = `- ${client.getEmoji("mocoin")} ${reward[0]} x${
@@ -298,26 +298,14 @@ module.exports = {
     let size;
 
     collector.on("collect", async (i) => {
-      switch (i.customId) {
-        case `smallCrate:${interaction.id}`:
-          authorProfile.inventory.crates.small--;
-          await authorProfile.save();
+      size = i.customId.startsWith("small")
+        ? "Small"
+        : i.customId.startsWith("medium")
+        ? "Medium"
+        : "Large";
 
-          size = "Small";
-          break;
-        case `mediumCrate:${interaction.id}`:
-          authorProfile.inventory.crates.medium--;
-          await authorProfile.save();
-
-          size = "Medium";
-          break;
-        case `largeCrate:${interaction.id}`:
-          authorProfile.inventory.crates.large--;
-          await authorProfile.save();
-
-          size = "Large";
-          break;
-      }
+      authorProfile.inventory.crates[size.toLowerCase()]--;
+      await authorProfile.inventory.save();
 
       const reward = OpenCrate(size);
       const rewardText = await GrantReward(reward);

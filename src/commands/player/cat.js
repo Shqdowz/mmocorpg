@@ -20,9 +20,9 @@ module.exports = {
             .setDescription("The item to give the cat")
             .setRequired(true)
             .addChoices(
-              { name: "Medicine", value: "medicines" },
-              { name: "Treats", value: "treats" },
-              { name: "Toy", value: "toys" }
+              { name: "Medicine", value: "medicine" },
+              { name: "Treats", value: "treat" },
+              { name: "Toy", value: "toy" }
             )
         )
         .addNumberOption((option) =>
@@ -80,19 +80,16 @@ module.exports = {
       cat = authorProfile.cat;
     }
 
-    async function convertToEmoji(value) {
-      let i = 0;
-      let j = 0;
-      let response = "";
-
+    async function ConvertToEmoji(value) {
       const greens = Math.ceil(value / 10);
-      while (i < greens) {
-        response += "🟩";
-        i++;
-      }
-      while (j < 10 - greens) {
-        response += "⬛";
-        j++;
+
+      let response = "";
+      for (let i = 0; i < 10; i++) {
+        if (i < greens) {
+          response += "🟩";
+        } else {
+          response += "⬛";
+        }
       }
 
       return response;
@@ -103,9 +100,9 @@ module.exports = {
       const amount = interaction.options.getNumber("amount") || 1;
 
       const type =
-        item == "medicines"
+        item == "medicine"
           ? "health"
-          : item == "treats"
+          : item == "treat"
           ? "hunger"
           : "happiness";
       await authorProfile.populate("inventory");
@@ -113,7 +110,7 @@ module.exports = {
       // If the author doesn't have any <item>
       if (authorProfile.inventory[item] == 0) {
         return await interaction.reply({
-          content: `You don't have any **${item}** left! Buy more at the market.`,
+          content: `You don't have any **${item}s** left! Buy more at the market.`,
           ephemeral: true,
         });
       }
@@ -121,7 +118,7 @@ module.exports = {
       // If the author doesn't have the specified amount of <item>
       if (authorProfile.inventory[item] < amount) {
         return await interaction.reply({
-          content: `You don't have that many **${item}** left! You only have ${authorProfile.inventory[item]}.`,
+          content: `You don't have that many **${item}s** left! You only have ${authorProfile.inventory[item]}.`,
           ephemeral: true,
         });
       }
@@ -134,26 +131,18 @@ module.exports = {
         });
       }
 
-      let reply;
-      const replenish = (Math.floor(Math.random() * 6) + 10) * amount;
-
       authorProfile.inventory[item] -= amount;
       await authorProfile.inventory.save();
 
-      switch (item) {
-        case "medicines":
-          reply = `**${cat.name}** took the medicine and drank it. (**+${replenish}** health)`;
-          break;
-        case "treats":
-          reply = `**${cat.name}** took the treats and ate them. (**+${replenish}** hunger)`;
-          break;
-        case "toys":
-          reply = `**${cat.name}** played with the toy and broke it. (**+${replenish}** happiness)`;
-          break;
-      }
+      const replenish = (Math.floor(Math.random() * 6) + 10) * amount;
 
       cat[type] = Math.min(100, (cat[type] += replenish));
       await cat.save();
+
+      const dialogues = ["Meow!", "Meow meow!", "Meow :3", "Meow meow :3"];
+      const reply = `**${cat.name}**: '${
+        dialogues[Math.floor(Math.random() * dialogues.length)]
+      }' (**+${replenish}** ${type})`;
 
       if (cat[type] == 100) {
         const experience = Math.floor(Math.random() * 5) + 1;
@@ -164,20 +153,20 @@ module.exports = {
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`Gave ${cat.name} ${item}!`)
+        .setTitle(`Gave ${cat.name} ${item}s!`)
         .setDescription(reply)
         .addFields([
           {
             name: "Health",
-            value: `${await convertToEmoji(cat.health)} (${cat.health}%)`,
+            value: `${await ConvertToEmoji(cat.health)} (${cat.health}%)`,
           },
           {
             name: "Hunger",
-            value: `${await convertToEmoji(cat.hunger)} (${cat.hunger}%)`,
+            value: `${await ConvertToEmoji(cat.hunger)} (${cat.hunger}%)`,
           },
           {
             name: "Happiness",
-            value: `${await convertToEmoji(cat.happiness)} (${cat.happiness}%)`,
+            value: `${await ConvertToEmoji(cat.happiness)} (${cat.happiness}%)`,
           },
         ])
         .setFooter({
@@ -235,11 +224,9 @@ module.exports = {
         .setTimestamp()
         .setColor(client.getColor("random"));
 
-      try {
-        await interaction.reply({
-          embeds: [embed],
-        });
-      } catch (err) {}
+      await interaction.reply({
+        embeds: [embed],
+      });
 
       // Quest
       await client.handleQuests(interaction, authorProfile);
@@ -286,7 +273,7 @@ module.exports = {
               : 1;
 
           const moCoins = Math.ceil(Math.random() * 25) + rewardMultiplier * 25;
-          authorProfile["mo.coins"] += moCoins;
+          authorProfile["mocoins"] += moCoins;
           await authorProfile.save();
           const experience =
             Math.ceil(Math.random() * 10) + rewardMultiplier * 10;
@@ -308,7 +295,7 @@ module.exports = {
             Math.ceil(Math.random() * 20 + 20) * (cat.friendshipLevel - 1);
           const experience =
             Math.ceil(Math.random() * 10 + 10) * (cat.friendshipLevel - 1);
-          authorProfile["mo.coins"] += mocoins;
+          authorProfile["mocoins"] += mocoins;
           authorProfile.experience += experience;
           await authorProfile.save();
 
@@ -375,15 +362,15 @@ module.exports = {
         .addFields([
           {
             name: "Health",
-            value: `${await convertToEmoji(cat.health)} (${cat.health}%)`,
+            value: `${await ConvertToEmoji(cat.health)} (${cat.health}%)`,
           },
           {
             name: "Hunger",
-            value: `${await convertToEmoji(cat.hunger)} (${cat.hunger}%)`,
+            value: `${await ConvertToEmoji(cat.hunger)} (${cat.hunger}%)`,
           },
           {
             name: "Happiness",
-            value: `${await convertToEmoji(cat.happiness)} (${cat.happiness}%)`,
+            value: `${await ConvertToEmoji(cat.happiness)} (${cat.happiness}%)`,
           },
         ])
         .setFooter({
@@ -393,11 +380,9 @@ module.exports = {
         .setTimestamp()
         .setColor(client.getColor("random"));
 
-      try {
-        await interaction.reply({
-          embeds: [embed],
-        });
-      } catch (err) {}
+      await interaction.reply({
+        embeds: [embed],
+      });
     }
 
     if (interaction.options.getSubcommand() == "rename") {

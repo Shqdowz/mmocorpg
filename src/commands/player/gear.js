@@ -139,11 +139,11 @@ module.exports = {
       const missing = [];
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          if (inventory["mo.coins"] < material[1]) {
+          if (inventory["mocoins"] < material[1]) {
             missing.push([
               client.getEmoji("mocoin"),
               material[0],
-              `${inventory["mo.coins"]}/${material[1]}`,
+              `${inventory["mocoins"]}/${material[1]}`,
             ]);
           }
         } else if (
@@ -289,11 +289,11 @@ module.exports = {
 
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          if (inventory["mo.coins"] < material[1]) {
+          if (inventory["mocoins"] < material[1]) {
             missing.push([
               client.getEmoji("mocoin"),
               material[0],
-              `${inventory["mo.coins"]}/${material[1]}`,
+              `${inventory["mocoins"]}/${material[1]}`,
             ]);
           }
         } else if (
@@ -472,13 +472,11 @@ module.exports = {
         previousButton.setDisabled(true);
         nextButton.setDisabled(true);
 
-        try {
-          await interaction.editReply({
-            components: [
-              new ActionRowBuilder().addComponents(previousButton, nextButton),
-            ],
-          });
-        } catch (err) {}
+        await interaction.editReply({
+          components: [
+            new ActionRowBuilder().addComponents(previousButton, nextButton),
+          ],
+        });
       });
     }
 
@@ -717,7 +715,7 @@ module.exports = {
               if (m[0] == "mo.coins") {
                 emoji = client.getEmoji("mocoin");
 
-                if (authorProfile.inventory["mo.coins"] < m[1]) missing = true;
+                if (authorProfile.inventory["mocoins"] < m[1]) missing = true;
               } else if (m[0] == validity[1]) {
                 emoji = client.getEmoji("blueprint");
 
@@ -798,7 +796,7 @@ module.exports = {
 
       for (const material of materials) {
         if (material[0] == "mo.coins") {
-          authorProfile.inventory["mo.coins"] -= material[1];
+          authorProfile.inventory["mocoins"] -= material[1];
           await authorProfile.inventory.save();
 
           continue;

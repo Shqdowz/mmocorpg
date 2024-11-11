@@ -55,7 +55,7 @@ module.exports = {
     // -=+=- New schema variable add -=+=-
     // authorProfile.inventory.monsterDrops["Berserker Fist"] =
     //   (authorProfile.inventory.monsterDrops["Berserker Fist"] || 0) + 1;
-    // authorProfile.inventory["mo.coins"] += 10;
+    // authorProfile.inventory["mocoins"] += 10;
     // await authorProfile.inventory.save();
 
     // -=+=- Channel sending -=+=-
@@ -105,16 +105,13 @@ module.exports = {
     //   .setLabel("Next")
     //   .setStyle(ButtonStyle.Primary);
 
-    // let reply;
-    // try {
-    //   reply = await interaction.reply({
-    //     embeds: [embeds[0]],
-    //     components: [
-    //       new ActionRowBuilder().addComponents(previousButton, nextButton),
-    //     ],
-    //     ephemeral: true,
-    //   });
-    // } catch (err) {}
+    // const reply = await interaction.reply({
+    //   embeds: [embeds[0]],
+    //   components: [
+    //     new ActionRowBuilder().addComponents(previousButton, nextButton),
+    //   ],
+    //   ephemeral: true,
+    // });
 
     // const collector = reply.createMessageComponentCollector({
     //   componentType: ComponentType.Button,
@@ -152,13 +149,11 @@ module.exports = {
     //   previousButton.setDisabled(true);
     //   nextButton.setDisabled(true);
 
-    //   try {
-    //     await interaction.editReply({
-    //       components: [
-    //         new ActionRowBuilder().addComponents(previousButton, nextButton),
-    //       ],
-    //     });
-    //   } catch (err) {}
+    //   await interaction.editReply({
+    //     components: [
+    //       new ActionRowBuilder().addComponents(previousButton, nextButton),
+    //     ],
+    //   });
     // });
 
     await interaction.reply({

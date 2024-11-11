@@ -13,29 +13,17 @@ module.exports = {
     const authorProfile = await User.findOne({
       userId: interaction.user.id,
     });
-
-    function GetRefreshTime() {
-      const now = new Date();
-
-      const amsterdamOffset = 2 * 60;
-      const amsterdamTime = new Date(
-        now.getTime() + (now.getTimezoneOffset() + amsterdamOffset) * 60 * 1000
-      ).setHours(24, 0, 0, 0);
-
-      return amsterdamTime;
-    }
+    await authorProfile.populate("inventory");
 
     if (await client.handleCooldown("daily", interaction, authorProfile))
       return;
 
     const increase = authorProfile.dailyStreak * 0.04 + 1;
 
-    await authorProfile.populate("inventory");
-
-    const moCoins = Math.ceil(
+    const mocoins = Math.ceil(
       (Math.random() * 75 + 24) * Math.min(increase, 5)
     );
-    authorProfile.inventory["mo.coins"] += moCoins;
+    authorProfile.inventory["mocoins"] += mocoins;
 
     let crates;
     switch (Math.floor(increase)) {
@@ -81,7 +69,7 @@ module.exports = {
     await interaction.reply({
       content: `You claimed your daily reward! (🔥 **${
         authorProfile.dailyStreak
-      }**)\n- ${client.getEmoji("mocoin")} **+${moCoins}** mo.coins\n${crates}`,
+      }**)\n- ${client.getEmoji("mocoin")} **+${mocoins}** mo.coins\n${crates}`,
       ephemeral: true,
     });
   },

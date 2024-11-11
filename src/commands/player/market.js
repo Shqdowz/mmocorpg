@@ -74,7 +74,7 @@ module.exports = {
       const cost = costMap[item];
 
       // If the author doesn't have the required mo.coins
-      if (authorProfile.inventory["mo.coins"] < cost) {
+      if (authorProfile.inventory["mocoins"] < cost) {
         return await interaction.reply({
           content: `You don't have enough mo.coins to buy this item!`,
           ephemeral: true,
@@ -82,7 +82,7 @@ module.exports = {
       }
 
       authorProfile.inventory[item] += amount;
-      authorProfile.inventory["mo.coins"] -= cost;
+      authorProfile.inventory["mocoins"] -= cost;
       await authorProfile.inventory.save();
 
       const embed = new EmbedBuilder()
@@ -97,9 +97,7 @@ module.exports = {
         .setTimestamp()
         .setColor("#00ff00");
 
-      try {
-        await interaction.reply({ embeds: [embed] });
-      } catch (err) {}
+      await interaction.reply({ embeds: [embed] });
     }
 
     if (interaction.options.getSubcommand() == "list") {

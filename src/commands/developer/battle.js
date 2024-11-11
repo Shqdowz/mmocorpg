@@ -82,12 +82,10 @@ module.exports = {
 
     function MapPlayers(players) {
       return players
-        .map(({ profile: { copy }, name }) => {
-          const { level, hitPoints, maxHitPoints } = copy;
-
-          return `\`[${level}]\` ${name}: ${client.getEmoji(
+        .map((player) => {
+          return `\`[${player.level}]\` ${player.name}: ${client.getEmoji(
             "health"
-          )} **${hitPoints}** / **${maxHitPoints}**`;
+          )} **${player.hitPoints}** / **${player.maxHitPoints}**`;
         })
         .join("\n");
     }
@@ -132,7 +130,7 @@ module.exports = {
         group: group,
 
         level: profile.level,
-        hitpoints: profile.hitPoints,
+        hitPoints: profile.hitPoints,
         speed: speed,
         interval: interval,
         next: next,
@@ -154,6 +152,8 @@ module.exports = {
             equipped: [...currentLoadout.gear.weapon],
           },
         },
+
+        profile: profile,
 
         stats: {
           "Damage Dealt": 0,
@@ -385,7 +385,7 @@ module.exports = {
 
     for (const player of players) {
       // If a player is currently busy
-      if (player.profile.original.isBusy) {
+      if (player.profile.isBusy) {
         return await interaction.reply({
           content: `**${player.name}** is currently busy!`,
           ephemeral: true,
@@ -413,26 +413,23 @@ module.exports = {
     // -=+=- Battle starting -=+=-
     for (const player of players) {
       if (player.user) {
-        player.profile.original.isBusy = true;
-        await player.profile.original.save();
+        player.profile.isBusy = true;
+        await player.profile.save();
       }
     }
 
-    let thread;
-    try {
-      const reply = await interaction.reply({
-        content: "Battle started! See the thread below.",
-        fetchReply: true,
-      });
+    const reply = await interaction.reply({
+      content: "Battle started! See the thread below.",
+      fetchReply: true,
+    });
 
-      thread = await reply.startThread({
-        name: `${allies[0].name}'s party VS ${enemies[0].name}'s party`,
-      });
+    const thread = await reply.startThread({
+      name: `${allies[0].name}'s party VS ${enemies[0].name}'s party`,
+    });
 
-      for (const player of players) {
-        await thread.members.add(player.user);
-      }
-    } catch (err) {}
+    for (const player of players) {
+      if (player.user) await thread.members.add(player.user);
+    }
 
     // -=+=- Other variables -=+=-
     const maxTime = 10.0;
@@ -3140,7 +3137,7 @@ module.exports = {
     for (const ally of allAllies) {
       if (!ally.user) continue;
 
-      await ally.profile.original.populate("inventory");
+      await ally.profile.populate("inventory");
 
       let loot = [];
       let mocoins = 0;
@@ -3166,7 +3163,7 @@ module.exports = {
             ...["active", "passive", "weapon"].flatMap((type) =>
               FilterGear(ally.gear[type].list)
             ),
-            ...ally.profile.original.inventory.blueprints,
+            ...ally.profile.inventory.blueprints,
           ];
 
           const filteredGear = gearArray.all.filter(
@@ -3181,7 +3178,7 @@ module.exports = {
       for (const enemy of allEnemies) {
         if (enemy.hitPoints == 0 && enemy.name != "Scorcher Egg") {
           const emoji = client.getEmoji(enemy.drop.name);
-          const levelMultiplier = 0.9 + 0.1 * enemy.level;
+          const levelMultiplier = 0.98 + 0.02 * enemy.level;
 
           const dropAmount = enemy.drop.amount * levelMultiplier;
           const totalDrops =
@@ -3217,20 +3214,19 @@ module.exports = {
         }
       }
 
-      if (blueprint) ally.profile.original.inventory.blueprints.push(blueprint);
+      if (blueprint) ally.profile.inventory.blueprints.push(blueprint);
       if (loot.length > 0) {
         loot.forEach((item) => {
-          ally.profile.original.inventory.monsterDrops[item.name] =
-            (ally.profile.original.inventory.monsterDrops[item.name] || 0) +
-            item.amount;
+          ally.profile.inventory.monsterDrops[item.name] =
+            (ally.profile.inventory.monsterDrops[item.name] || 0) + item.amount;
         });
       }
-      if (mocoins) ally.profile.original.inventory["mo.coins"] += mocoins;
-      if (experience) ally.profile.original.experience += experience;
+      if (mocoins) ally.profile.inventory["mocoins"] += mocoins;
+      if (experience) ally.profile.experience += experience;
 
       if (blueprint || loot.length || mocoins || experience) {
-        await ally.profile.original.save();
-        await ally.profile.original.inventory.save();
+        await ally.profile.save();
+        await ally.profile.inventory.save();
 
         const embed = new EmbedBuilder()
           .setTitle(`**${ally.name}**'s loot`)
@@ -3312,16 +3308,13 @@ module.exports = {
       for (const ally of allAllies) {
         if (!ally.user) continue;
 
-        ally.profile.original.isBusy = false;
-        await ally.profile.original.save();
+        ally.profile.isBusy = false;
+        await ally.profile.save();
 
-        if (
-          authorProfile.party &&
-          !ally.profile.original.settings.alwaysReady
-        ) {
+        if (authorProfile.party && !ally.profile.settings.alwaysReady) {
           authorProfile.party.members.find(
             (member) =>
-              member.user._id.toString() == ally.profile.original._id.toString()
+              member.user._id.toString() == ally.profile._id.toString()
           ).ready = false;
           await authorProfile.party.save();
         }
@@ -3332,7 +3325,7 @@ module.exports = {
     for (const player of allPlayers) {
       if (!player.user) continue;
 
-      await client.handleQuests(interaction, player.profile.original, {
+      await client.handleQuests(interaction, player.profile, {
         player: player,
         allies: allAllies,
         enemies: allEnemies,
