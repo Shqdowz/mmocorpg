@@ -788,8 +788,6 @@ module.exports = {
       let victims = [];
       let affected = [];
 
-      // static = rolled, real = increased/reduced
-
       let staticDamage = 0;
       let realDamage = 0;
       let dealtDamage = 0;
@@ -2897,7 +2895,7 @@ module.exports = {
             if (player.thresholds.hit) {
               player.thresholds.hit = false;
 
-              if (enemies.length < 6) {
+              if (teammates.length < 6) {
                 const monster =
                   monsterArray.standard[
                     Math.floor(Math.random() * monsterArray.standard.length)
@@ -2924,7 +2922,7 @@ module.exports = {
                 player.thresholds[hp_x] = -1;
 
                 let eggs = 0;
-                for (let i = 0; i < 6 - enemies.length && i < 2; i++) {
+                for (let i = 0; i < 6 - teammates.length && i < 2; i++) {
                   eggs++;
 
                   await PushMonster("Scorcher Egg", 2, currentTime, player);
@@ -2996,7 +2994,7 @@ module.exports = {
 
                 let spawned = [];
 
-                if (enemies.length < 6) {
+                if (teammates.length < 6) {
                   if (hp_x == "hp_1") {
                     await PushMonster("Heavy Spitter", 2, currentTime, player);
 
