@@ -39,7 +39,7 @@ module.exports = {
       componentType: ComponentType.StringSelect,
       filter: (i) =>
         i.user.id == interaction.user.id && i.customId.endsWith(interaction.id),
-      time: 30 * 1000,
+      time: 60 * 1000,
     });
 
     collector.on("collect", async (i) => {
