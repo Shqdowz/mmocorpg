@@ -1,7 +1,3 @@
-// All chapters:
-// Dependencies, Schemas, Utilities, Global variables, Functions, Team filling, Battle starting, Other variables, Main battle logic
-// Determine move, Action variables, Effect system, Handle active gear, Handle thresholds, Turn preparation, Loot drops
-
 // -=+=- Dependencies -=+=-
 const {
   SlashCommandBuilder,
