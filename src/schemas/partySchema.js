@@ -7,6 +7,7 @@ const partySchema = new Schema({
   leader: { type: Schema.Types.ObjectId, ref: "User" },
   members: [
     {
+      _id: false,
       profile: { type: Schema.Types.ObjectId, ref: "User" },
       ready: { type: Boolean, default: false },
     },
