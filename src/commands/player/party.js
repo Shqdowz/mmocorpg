@@ -141,10 +141,12 @@ module.exports = {
       const collector = reply.createMessageComponentCollector({
         componentType: ComponentType.Button,
         filter: (i) => i.customId.endsWith(interaction.id),
-        time: 60 * 1000,
+        time: 30 * 1000,
       });
 
       collector.on("collect", async (i) => {
+        collector.resetTimer({ time: 30 * 1000 });
+
         const clickerProfile = await User.findOne({ userId: i.user.id });
 
         const memberIndex = authorProfile.party.members.findIndex(

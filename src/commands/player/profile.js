@@ -99,14 +99,15 @@ module.exports = {
       componentType: ComponentType.Button,
       filter: (i) =>
         i.user.id == userProfile.userId && i.customId.endsWith(interaction.id),
-      time: 60 * 1000,
+      time: 30 * 1000,
     });
 
     collector.on("collect", async (i) => {
+      collector.resetTimer({ time: 30 * 1000 });
+
       switch (i.customId) {
         case `hitpoints:${interaction.id}`:
           userProfile.hitPoints += 8;
-          userProfile.maxHitPoints += 8;
           userProfile.statPoints -= 1;
           await userProfile.save();
           break;

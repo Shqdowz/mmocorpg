@@ -292,12 +292,14 @@ module.exports = {
       componentType: ComponentType.Button,
       filter: (i) =>
         i.user.id == interaction.user.id && i.customId.endsWith(interaction.id),
-      time: 60 * 1000,
+      time: 30 * 1000,
     });
 
     let size;
 
     collector.on("collect", async (i) => {
+      collector.resetTimer({ time: 30 * 1000 });
+
       size = i.customId.startsWith("small")
         ? "Small"
         : i.customId.startsWith("medium")

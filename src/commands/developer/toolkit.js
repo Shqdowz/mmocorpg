@@ -117,15 +117,15 @@ module.exports = {
     //   componentType: ComponentType.Button,
     //   filter: (i) =>
     //     i.user.id == interaction.user.id && i.customId.endsWith(interaction.id),
-    //   time: 60 * 1000,
+    //   time: 30 * 1000,
     // });
 
     // let page = 0;
 
     // collector.on("collect", async (i) => {
-    //   if (!i.customId.endsWith(interaction.id)) return;
+    //   collector.resetTimer({ time: 30 * 1000 });
 
-    // //   switch (i.customId) {
+    //   switch (i.customId) {
     //     case `previous:${interaction.id}`:
     //       page--;
     //       break;
