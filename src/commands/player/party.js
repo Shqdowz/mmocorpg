@@ -71,7 +71,7 @@ module.exports = {
     }
     await authorProfile.populate("party");
     await authorProfile.party.populate("leader");
-    await authorProfile.party.populate("members.user");
+    await authorProfile.party.members.populate("profile");
 
     const target = interaction.options.getUser("target");
     let targetProfile;
@@ -81,7 +81,7 @@ module.exports = {
       if (targetProfile.party) {
         await targetProfile.populate("party");
         await targetProfile.party.populate("leader");
-        await targetProfile.party.populate("members.user");
+        await targetProfile.party.members.populate("profile");
       }
     }
 
@@ -99,7 +99,7 @@ module.exports = {
                 .map(
                   (member, index) =>
                     `${index + 1}. ${member.ready ? `🟢` : `🔴`} **${
-                      member.user.username
+                      member.profile.username
                     }**`
                 )
                 .join("\n")}\nTotal members: **${
@@ -149,7 +149,7 @@ module.exports = {
 
         const memberIndex = authorProfile.party.members.findIndex(
           (member) =>
-            member.user._id.toString() == clickerProfile._id.toString()
+            member.profile._id.toString() == clickerProfile._id.toString()
         );
 
         if (memberIndex == -1) return;
@@ -281,7 +281,7 @@ module.exports = {
             if (targetProfile.party) {
               const memberIndex = targetProfile.party.members.findIndex(
                 (member) =>
-                  member.user._id.toString() == targetProfile._id.toString()
+                  member.profile._id.toString() == targetProfile._id.toString()
               );
 
               targetProfile.party.members.splice(memberIndex, 1);
@@ -393,7 +393,8 @@ module.exports = {
       }
 
       const memberIndex = targetProfile.party.members.findIndex(
-        (member) => member.user._id.toString() == targetProfile._id.toString()
+        (member) =>
+          member.profile._id.toString() == targetProfile._id.toString()
       );
 
       targetProfile.party.members.splice(memberIndex, 1);
@@ -419,7 +420,8 @@ module.exports = {
 
     if (interaction.options.getSubcommand() == "leave") {
       const memberIndex = authorProfile.party.members.findIndex(
-        (member) => member.user._id.toString() == authorProfile._id.toString()
+        (member) =>
+          member.profile._id.toString() == authorProfile._id.toString()
       );
 
       authorProfile.party.members.splice(memberIndex, 1);
