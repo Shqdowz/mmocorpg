@@ -16,13 +16,19 @@ const wait = require("node:timers/promises").setTimeout;
 
 module.exports = (client) => {
   client.handleBattle = async (interaction, settings) => {
+    if (interaction.channel.type != 0) {
+      return await interaction.reply({
+        content: `You can only use this command in text channels!`,
+        ephemeral: true,
+      });
+    }
+
     const { startEnemies } = settings;
 
-    // Arrays
+    // -=+=- Global variables -=+=-
     const gearArray = client.getArray("gear");
     const monsterArray = client.getArray("monsters");
 
-    // -=+=- Global variables -=+=-
     let playerId = 0;
 
     let players = [];
@@ -316,13 +322,6 @@ module.exports = (client) => {
       }
     }
 
-    if (interaction.channel.type != 0) {
-      return await interaction.reply({
-        content: `You can only use this command in text channels!`,
-        ephemeral: true,
-      });
-    }
-
     // -=+=- Ally team -=+=-
     const authorProfile = await User.findOne({
       userId: interaction.user.id,
@@ -429,7 +428,7 @@ module.exports = (client) => {
         ])
         .setColor(overtime ? "Red" : "Green");
 
-      // Add buttons
+      // -=+=- Buttons -=+=-
       let buttons = [];
 
       if (player.user) {
@@ -656,7 +655,6 @@ module.exports = (client) => {
             break;
         }
 
-        // Determine skill
         const rng = Math.ceil(Math.random() * 100);
         let total = 0;
 
@@ -725,7 +723,7 @@ module.exports = (client) => {
         ]);
       }
 
-      // -=+=- Action variables -=+=-
+      // -=+=- Turn variables -=+=-
       let victim;
       let victims = [];
       let affected = [];
@@ -757,7 +755,8 @@ module.exports = (client) => {
       let chance;
       let duration;
 
-      let bunchOfDiceActivated = false;
+      let bunchOfDiceActivated = false; // Bunch of Dice
+      let hitEnemies = []; // Techno Fists
 
       // -=+=- Effect system -=+=-
       function GetIncRed(player, target) {
@@ -820,8 +819,6 @@ module.exports = (client) => {
           );
         }
       }
-
-      let hitEnemies = [];
 
       async function HandleEffect(player, target, effect) {
         let EffectValue = 0;
@@ -1009,6 +1006,7 @@ module.exports = (client) => {
         }
       }
 
+      // -=+=- Turn preparation -=+=-
       function DetermineSides(player) {
         if (allAllies.includes(player)) {
           teammates = allies;
@@ -2307,6 +2305,7 @@ module.exports = (client) => {
 
       await HandleActive(active, true);
 
+      // -=+=- Handle passive gear -=+=-
       async function HandlePassives(passives) {
         DetermineSides(player);
 
@@ -2544,6 +2543,7 @@ module.exports = (client) => {
       // Techno Fists
       if (hitEnemies.length > 3) player.thresholds["Techno Fists"] += 1;
 
+      // -=+=- Handle weapon gear -=+=-
       async function HandleWeapon(weapon) {
         DetermineSides(player);
 
@@ -2835,6 +2835,7 @@ module.exports = (client) => {
 
       if (bunchOfDiceActivated) player.thresholds["Bunch of Dice"] = true;
 
+      // -=+=- Handle thresholds -=+=-
       async function HandleThresholds(player) {
         DetermineSides(player);
 
@@ -3018,6 +3019,7 @@ module.exports = (client) => {
 
       await wait(overtime ? 1.5 * 1000 : 3 * 1000);
 
+      // -=+=- Post-actions -=+=-
       player.next = FixedFloat(player.next + player.interval);
 
       // Handle effects that weren't already handled this turn
@@ -3033,6 +3035,7 @@ module.exports = (client) => {
         effect.initial = false;
       }
 
+      // DoT
       FilterDeadPlayers();
 
       // Check if any team has won
@@ -3076,7 +3079,6 @@ module.exports = (client) => {
         }
       }
 
-      // Handle turn
       await HandleTurn(currentPlayer);
     }
 
@@ -3219,6 +3221,7 @@ module.exports = (client) => {
       });
     }
 
+    // -=+=- Post-battle -=+=-
     const winnerEmbed = new EmbedBuilder()
       .setTitle(`Battle over!`)
       .setDescription(`Winners: **${winners}**`)
