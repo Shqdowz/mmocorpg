@@ -328,18 +328,6 @@ module.exports = {
                 name: `Always ready`,
                 value: `- Whether you stay readied up inside your party after a fight.`,
               },
-              {
-                name: `Detailed battle`,
-                value: `- Whether you want to view details during a fight, such as active effects or player levels.`,
-              },
-              {
-                name: `Instant open`,
-                value: `- Whether you want lootboxes to be opened instantly.`,
-              },
-              {
-                name: `Auto recycle`,
-                value: `- Whether you want duplicate trophies to be recycled automatically.`,
-              },
             ])
             .setColor(client.getColor("random"))
         );
