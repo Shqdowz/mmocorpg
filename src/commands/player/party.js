@@ -59,7 +59,7 @@ module.exports = {
         leader: authorProfile._id,
         members: [
           {
-            user: authorProfile._id,
+            profile: authorProfile._id,
             ready: authorProfile.settings["Always Ready"],
           },
         ],
@@ -71,7 +71,7 @@ module.exports = {
     }
     await authorProfile.populate("party");
     await authorProfile.party.populate("leader");
-    await authorProfile.party.members.populate("profile");
+    await authorProfile.party.populate("members.profile");
 
     const target = interaction.options.getUser("target");
     let targetProfile;
@@ -81,7 +81,7 @@ module.exports = {
       if (targetProfile.party) {
         await targetProfile.populate("party");
         await targetProfile.party.populate("leader");
-        await targetProfile.party.members.populate("profile");
+        await targetProfile.party.populate("members.profile");
       }
     }
 
@@ -295,7 +295,7 @@ module.exports = {
               ) {
                 if (targetProfile.party.members.length > 0) {
                   targetProfile.party.leader =
-                    targetProfile.party.members[0].user._id;
+                    targetProfile.party.members[0].profile._id;
                   await targetProfile.party.save();
                 } else {
                   await Party.findByIdAndDelete(targetProfile.party._id);
@@ -304,8 +304,8 @@ module.exports = {
             }
 
             authorProfile.party.members.push({
-              user: targetProfile._id,
-              ready: targetProfile.settings.alwaysReady,
+              profile: targetProfile._id,
+              ready: targetProfile.settings["Always Ready"],
             });
             await authorProfile.party.save();
 
@@ -430,7 +430,7 @@ module.exports = {
       await authorProfile.party.save();
 
       if (authorProfile.party.members.length > 0) {
-        authorProfile.party.leader = authorProfile.party.members[0].user._id;
+        authorProfile.party.leader = authorProfile.party.members[0].profile._id;
         await authorProfile.party.save();
       } else {
         await Party.findByIdAndDelete(authorProfile.party._id);
