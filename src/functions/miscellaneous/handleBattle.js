@@ -3028,7 +3028,11 @@ module.exports = (client) => {
         .sort((a, b) => {
           return a.duration - b.duration;
         })) {
-        await HandleEffect(player, player, effect);
+        await HandleEffect(
+          allPlayers.find((p) => p.id == effect.by),
+          player,
+          effect
+        );
       }
 
       for (const effect of player.activeEffects.filter((e) => e.initial)) {
@@ -3210,15 +3214,6 @@ module.exports = (client) => {
         embed.addFields(fields);
         await thread.send({ content: `${ally.user}`, embeds: [embed] });
       }
-    }
-
-    // remove this whenever
-    for (const player of allPlayers.filter((player) => player.user)) {
-      await thread.send({
-        content: `${player.name}'s battle stats\n${Object.entries(player.stats)
-          .map(([key, value]) => `- ${key}: ${value}`)
-          .join("\n")}`,
-      });
     }
 
     // -=+=- Post-battle -=+=-
