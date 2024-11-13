@@ -147,7 +147,7 @@ module.exports = (client) => {
 
       const ally = {
         id: playerId,
-        index: playerId,
+        index: players.length,
         name: profile.username,
         user: user,
         group: group,
@@ -231,7 +231,7 @@ module.exports = (client) => {
 
       const enemy = {
         id: playerId,
-        index: playerId,
+        index: players.length,
         name: profile.name,
         user: null,
         group: group,
@@ -3044,12 +3044,6 @@ module.exports = (client) => {
         await thread.send(`Battle ended! Winners: **${winners}**`);
       }
     }
-
-    // Sort initial queue
-    players.sort((a, b) => {
-      if (a.next == b.next) return a.id - b.id;
-      return a.next - b.next;
-    });
 
     // -=+=- Turn preparation -=+=-
     while (!gameEnded) {
