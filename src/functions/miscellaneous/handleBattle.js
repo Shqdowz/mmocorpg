@@ -329,7 +329,7 @@ module.exports = (client) => {
     }).populate("party");
 
     if (authorProfile.party && authorProfile.party.members.length > 1) {
-      await authorProfile.party.members.populate("profile");
+      await authorProfile.party.populate("members.profile");
 
       if (
         authorProfile.party.leader._id.toString() !=
@@ -1672,7 +1672,9 @@ module.exports = (client) => {
                 player.name
               }** used **${active}** on **${victims
                 .map((v) => v)
-                .join(", ")}**!\n${affected.map((a) => a[0] + a[1])}`;
+                .join(", ")}**!\n${affected
+                .map((a) => a[0] + a[1])
+                .join("\n")}`;
             } else {
               activeReply = `**${player.name}** used **${active}**, but didn't hit anyone.`;
             }
@@ -3259,7 +3261,7 @@ module.exports = (client) => {
         ally.profile.isBusy = false;
         await ally.profile.save();
 
-        if (authorProfile.party && !ally.profile.settings.alwaysReady) {
+        if (authorProfile.party && !ally.profile.settings["Always Ready"]) {
           authorProfile.party.members.find(
             (member) =>
               member.profile._id.toString() == ally.profile._id.toString()
