@@ -77,7 +77,7 @@ module.exports = (client) => {
 
         if (
           authorProfile.cooldowns.daily &&
-          new Date() < authorProfile.cooldowns.daily
+          new Date().getTime() < authorProfile.cooldowns.daily.getTime()
         ) {
           const next = Math.floor(
             new Date(authorProfile.cooldowns.daily.getTime()).getTime() / 1000
@@ -90,7 +90,7 @@ module.exports = (client) => {
 
         if (
           authorProfile.cooldowns.daily &&
-          new Date() < authorProfile.cooldowns.daily + day
+          new Date().getTime() < authorProfile.cooldowns.daily.getTime() + day
         ) {
           authorProfile.dailyStreak += 1;
           await authorProfile.save();
