@@ -74,13 +74,13 @@ module.exports = {
       if (userProfile.statPoints) {
         const hitpoints = new ButtonBuilder()
           .setCustomId(`hitpoints:${interaction.id}`)
-          .setLabel(`+8 HP`)
+          .setLabel(`+6 HP`)
           .setEmoji(client.getEmoji("health"))
           .setStyle(ButtonStyle.Primary)
           .setDisabled(userProfile.hitPoints == 300);
         const speed = new ButtonBuilder()
           .setCustomId(`speed:${interaction.id}`)
-          .setLabel(`+0.08 SPD`)
+          .setLabel(`+0.06 SPD`)
           .setEmoji(client.getEmoji("speed"))
           .setStyle(ButtonStyle.Primary)
           .setDisabled(userProfile.speed == 3.0);
@@ -107,12 +107,12 @@ module.exports = {
 
       switch (i.customId) {
         case `hitpoints:${interaction.id}`:
-          userProfile.hitPoints += 8;
+          userProfile.hitPoints += 6;
           userProfile.statPoints -= 1;
           await userProfile.save();
           break;
         case `speed:${interaction.id}`:
-          userProfile.speed = parseFloat((userProfile.speed + 0.08).toFixed(2));
+          userProfile.speed = parseFloat((userProfile.speed + 0.06).toFixed(2));
           userProfile.statPoints -= 1;
           await userProfile.save();
           break;
@@ -121,6 +121,11 @@ module.exports = {
       await interaction.editReply({
         embeds: [await GenerateEmbed()],
         components: await GenerateComponent(),
+      });
+
+      await i.reply({
+        content: `Upgraded your ${i.customId.split(":")[0]}!`,
+        ephemeral: true,
       });
 
       if (!userProfile.statPoints) collector.stop();
