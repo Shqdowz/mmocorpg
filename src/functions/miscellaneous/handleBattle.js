@@ -126,6 +126,10 @@ module.exports = (client) => {
       }
     }
 
+    function ScaleByLevel(level, increase) {
+      return 1 - increase + increase * level;
+    }
+
     function PushToPlayers(player, group) {
       players.push(player);
       allPlayers.push(player);
@@ -151,7 +155,7 @@ module.exports = (client) => {
       const user = await client.users.fetch(profile.userId);
       const loadout = profile.loadout.list.find((loadout) => loadout.equipped);
 
-      const ally = {
+      const player = {
         id: playerId,
         index: players.length,
         name: profile.username,
@@ -210,16 +214,14 @@ module.exports = (client) => {
         cooldowns: [],
       };
 
-      PushToPlayers(ally, group);
+      PushToPlayers(player, group);
       return;
     }
 
-    function GetMonsterScaling(level) {
-      return 0.97 + 0.03 * level;
-    }
-
-    async function PushMonster(profile, group, time, from) {
+    async function PushMonster(name, group, time, from) {
       playerId++;
+
+      const profile = await Monster.findOne({ name: name });
 
       // Refresh player's Shelldon/Wolf
       if (profile.name == "Shelldon" || profile.name == "Wolf") {
@@ -235,7 +237,7 @@ module.exports = (client) => {
         }
       }
 
-      const enemy = {
+      const monster = {
         id: playerId,
         index: players.length,
         name: profile.name,
@@ -270,11 +272,11 @@ module.exports = (client) => {
 
       if (from) {
         if (profile.name == "Lil Grunt" && from.name == "Lil Grunt") {
-          enemy.level = from.level;
-          enemy.hitPoints = from.hitPoints;
-          enemy.maxHitPoints = from.maxHitPoints;
+          monster.level = from.level;
+          monster.hitPoints = from.hitPoints;
+          monster.maxHitPoints = from.maxHitPoints;
 
-          PushToPlayers(enemy, group);
+          PushToPlayers(monster, group);
           return;
         }
 
@@ -291,19 +293,20 @@ module.exports = (client) => {
 
           const [gear, type] = gearTypeMap[name];
 
-          enemy.level = Math.max(1, 10 * from.gear[type][gear] - 10);
-          enemy.maxHitPoints = Math.round(
-            enemy.maxHitPoints * GetMonsterScaling(enemy.level)
+          monster.level = Math.max(1, 10 * from.gear[type].list[gear] - 10);
+
+          monster.maxHitPoints = Math.round(
+            monster.maxHitPoints * ScaleByLevel(from.gear[type].list[gear], 0.2)
           );
-          enemy.hitPoints = enemy.maxHitPoints;
+          monster.hitPoints = monster.maxHitPoints;
 
-          enemy.thresholds.ownerId = from.id;
+          monster.thresholds.ownerId = from.id;
 
-          PushToPlayers(enemy, group);
+          PushToPlayers(monster, group);
           return;
         }
-      } else {
-        const enemyLevel = Math.max(
+
+        const monsterLevel = Math.max(
           1,
           Math.floor(
             Math.random() * (averageLevel + 3 - (averageLevel - 3) + 1)
@@ -311,13 +314,30 @@ module.exports = (client) => {
             (averageLevel - 3)
         );
 
-        enemy.level = enemyLevel;
-        enemy.maxHitPoints = Math.round(
-          enemy.maxHitPoints * GetMonsterScaling(enemy.level)
+        monster.level = monsterLevel;
+        monster.maxHitPoints = Math.round(
+          monster.maxHitPoints * ScaleByLevel(monster.level, 0.04)
         );
-        enemy.hitPoints = enemy.maxHitPoints;
+        monster.hitPoints = monster.maxHitPoints;
 
-        PushToPlayers(enemy, group);
+        PushToPlayers(monster, group);
+        return;
+      } else {
+        const monsterLevel = Math.max(
+          1,
+          Math.floor(
+            Math.random() * (averageLevel + 3 - (averageLevel - 3) + 1)
+          ) +
+            (averageLevel - 3)
+        );
+
+        monster.level = monsterLevel;
+        monster.maxHitPoints = Math.round(
+          monster.maxHitPoints * ScaleByLevel(monster.level, 0.04)
+        );
+        monster.hitPoints = monster.maxHitPoints;
+
+        PushToPlayers(monster, group);
         return;
       }
     }
@@ -374,8 +394,7 @@ module.exports = (client) => {
     );
 
     for (const enemy of startEnemies) {
-      const monster = await Monster.findOne({ name: enemy });
-      await PushMonster(monster, 2, 0, null);
+      await PushMonster(enemy, 2, 0, null);
     }
 
     // -=+=- Battle starting -=+=-
@@ -728,8 +747,6 @@ module.exports = (client) => {
       let victims = [];
       let affected = [];
 
-      let monster;
-
       let staticDamage = 0;
       let realDamage = 0;
       let dealtDamage = 0;
@@ -1034,7 +1051,7 @@ module.exports = (client) => {
         affected = [];
 
         if (player.thresholds["Active Ace"]) {
-          player.gear.active.list[active] += 1;
+          player.gear.active.list[active] += 2;
         }
 
         let minMax;
@@ -1045,7 +1062,7 @@ module.exports = (client) => {
               staticDamage = await CalculateEffect(
                 [14, 18],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.active.list[active])
+                  ScaleByLevel(player.gear.active.list[active], 0.1)
               );
               await AddEffect(
                 player,
@@ -1059,7 +1076,7 @@ module.exports = (client) => {
               if (Math.random() <= 0.5) {
                 stun = await CalculateEffect(
                   [0.4],
-                  0.95 + 0.05 * player.gear.active.list[active]
+                  ScaleByLevel(player.gear.active.list[active], 0.05)
                 );
                 await AddEffect(player, victim, "Stun", active, stun, 1);
               } else {
@@ -1088,7 +1105,7 @@ module.exports = (client) => {
               1 -
               (await CalculateEffect(
                 [0.2],
-                0.95 + 0.05 * player.gear.active.list[active]
+                ScaleByLevel(player.gear.active.list[active], 0.05)
               ));
             await AddEffect(
               player,
@@ -1115,7 +1132,8 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [28, 32],
-              (overtime ? 2 : 1) * (0.8 + 0.2 * player.gear.active.list[active])
+              (overtime ? 2 : 1) *
+                ScaleByLevel(player.gear.active.list[active], 0.1)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1133,7 +1151,7 @@ module.exports = (client) => {
               1 +
               (await CalculateEffect(
                 [0.4],
-                0.95 + 0.05 * player.gear.active.list[active]
+                ScaleByLevel(player.gear.active.list[active], 0.05)
               ));
             await AddEffect(
               player,
@@ -1156,8 +1174,7 @@ module.exports = (client) => {
             }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Shelldon":
-            monster = await Monster.findOne({ name: "Shelldon" });
-            await PushMonster(monster, 1, currentTime, player);
+            await PushMonster("Shelldon", 1, currentTime, player);
 
             activeReply = `**${player.name}** used **${active}**! **1 Shelldon** has been spawned.`;
             break;
@@ -1166,7 +1183,7 @@ module.exports = (client) => {
               staticDamage = await CalculateEffect(
                 [8, 12],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.active.list[active])
+                  ScaleByLevel(player.gear.active.list[active], 0.1)
               );
               await AddEffect(
                 player,
@@ -1194,13 +1211,13 @@ module.exports = (client) => {
               staticDoT = await CalculateEffect(
                 [3, 7],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.active.list[active])
+                  ScaleByLevel(player.gear.active.list[active], 0.1)
               );
               await AddEffect(player, victim, "Damage", active, staticDoT, 3);
 
               speed = await CalculateEffect(
                 [-0.15],
-                0.9 + 0.1 * player.gear.active.list[active]
+                ScaleByLevel(player.gear.active.list[active], 0.05)
               );
               await AddEffect(player, victim, "Speed", active, speed, 3);
 
@@ -1221,7 +1238,7 @@ module.exports = (client) => {
             staticHealing = await CalculateEffect(
               [16, 20],
               (overtime ? 0.5 : 1) *
-                (0.8 + 0.2 * player.gear.active.list[active])
+                ScaleByLevel(player.gear.active.list[active], 0.1)
             );
             await AddEffect(
               player,
@@ -1234,7 +1251,7 @@ module.exports = (client) => {
 
             speed = await CalculateEffect(
               [0.18],
-              0.9 + 0.1 * player.gear.active.list[active]
+              ScaleByLevel(player.gear.active.list[active], 0.05)
             );
             await AddEffect(player, player, "Speed", active, speed, 2);
 
@@ -1255,7 +1272,7 @@ module.exports = (client) => {
               staticHealing = await CalculateEffect(
                 [14, 18],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.gear.active.list[active])
+                  ScaleByLevel(player.gear.active.list[active], 0.1)
               );
               await AddEffect(
                 player,
@@ -1287,7 +1304,7 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
 
             for (const victim of opponents) {
@@ -1317,7 +1334,7 @@ module.exports = (client) => {
               if (Math.random() <= 0.5) {
                 staticDamage += await CalculateEffect(
                   [12, 12],
-                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                  (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
                 );
               }
             }
@@ -1325,7 +1342,7 @@ module.exports = (client) => {
             if (Math.random() <= 0.25) {
               staticDamage += await CalculateEffect(
                 [24, 24],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
             }
 
@@ -1367,7 +1384,7 @@ module.exports = (client) => {
             if (Math.random() <= chance) {
               staticDamage = await CalculateEffect(
                 [60, 60],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
               await AddEffect(
                 player,
@@ -1397,29 +1414,30 @@ module.exports = (client) => {
               case "Bone Smasher":
                 staticDamage = await CalculateEffect(
                   [15, 19],
-                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                  (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
                 );
                 stun = await CalculateEffect(
                   [0.16],
-                  0.995 + 0.005 * player.level
+                  ScaleByLevel(player.level, 0.01)
                 );
                 break;
               case "Wolf":
                 staticDamage = await CalculateEffect(
                   [8, 12],
                   (overtime ? 2 : 1) *
-                    (0.8 +
-                      0.2 *
-                        allPlayers.find(
-                          (p) => p.id == player.thresholds.ownerId
-                        ).gear.weapon.list["Wolf Stick"])
+                    ScaleByLevel(
+                      allPlayers.find((p) => p.id == player.thresholds.ownerId)
+                        .gear.weapon.list["Wolf Stick"],
+                      0.1
+                    )
                 );
                 stun = await CalculateEffect(
                   [0.12],
-                  0.995 +
-                    0.05 *
-                      allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .gear.weapon.list["Wolf Stick"]
+                  ScaleByLevel(
+                    allPlayers.find((p) => p.id == player.thresholds.ownerId)
+                      .gear.weapon.list["Wolf Stick"],
+                    0.05
+                  )
                 );
                 break;
             }
@@ -1459,11 +1477,14 @@ module.exports = (client) => {
             for (let i = 0; i < chargeStacks; i++) {
               staticDamage += await CalculateEffect(
                 [14, 18],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
             }
             speed = FixedFloat(0.2 * chargeStacks);
-            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [speed],
+              ScaleByLevel(player.level, 0.01)
+            );
 
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
             await AddEffect(player, player, "Speed", active, speed, 1);
@@ -1497,7 +1518,7 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [5, 10],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1514,7 +1535,8 @@ module.exports = (client) => {
             break;
           case "Dash": // big papa, bone smasher
             damageReduction =
-              1 - (await CalculateEffect([0.1], 0.995 + 0.005 * player.level));
+              1 -
+              (await CalculateEffect([0.1], ScaleByLevel(player.level, 0.01)));
             await AddEffect(
               player,
               player,
@@ -1524,7 +1546,10 @@ module.exports = (client) => {
               2
             );
 
-            speed = await CalculateEffect([0.24], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [0.24],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, player, "Speed", active, speed, 3);
 
             affected.push([
@@ -1543,7 +1568,8 @@ module.exports = (client) => {
             break;
           case "Decoy": // knight
             damageReduction =
-              1 - (await CalculateEffect([0.26], 0.995 + 0.005 * player.level));
+              1 -
+              (await CalculateEffect([0.26], ScaleByLevel(player.level, 0.01)));
 
             await AddEffect(
               player,
@@ -1572,7 +1598,7 @@ module.exports = (client) => {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [...minMax],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
               await AddEffect(
                 player,
@@ -1586,7 +1612,7 @@ module.exports = (client) => {
               if (Math.random() <= 0.5) {
                 stun = await CalculateEffect(
                   [0.26],
-                  0.995 + 0.005 * player.level
+                  ScaleByLevel(player.level, 0.01)
                 );
                 await AddEffect(player, victim, "Stun", active, stun, 1);
               } else {
@@ -1614,7 +1640,7 @@ module.exports = (client) => {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [13, 17],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
               await AddEffect(
                 player,
@@ -1653,7 +1679,7 @@ module.exports = (client) => {
               if (Math.random() <= chance) {
                 staticDoT = await CalculateEffect(
                   [...minMax],
-                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                  (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
                 );
                 await AddEffect(player, victim, "Damage", active, staticDoT, 3);
 
@@ -1680,11 +1706,11 @@ module.exports = (client) => {
           case "Fire Vortex": // bone smasher
             staticDamage = await CalculateEffect(
               [13, 17],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             staticDoT = await CalculateEffect(
               [6, 10],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
 
             for (const victim of opponents) {
@@ -1720,7 +1746,7 @@ module.exports = (client) => {
 
               staticDamage = await CalculateEffect(
                 [6, 6],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
 
               await AddEffect(
@@ -1765,7 +1791,7 @@ module.exports = (client) => {
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [8, 12],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
               await AddEffect(
                 player,
@@ -1796,7 +1822,7 @@ module.exports = (client) => {
               1 +
               (await CalculateEffect(
                 [damageIncrease],
-                0.995 + 0.005 * player.level
+                ScaleByLevel(player.level, 0.01)
               ));
             await AddEffect(
               player,
@@ -1808,7 +1834,10 @@ module.exports = (client) => {
             );
 
             speed = FixedFloat(-0.1 * player.thresholds.growStacks);
-            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [speed],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, player, "Speed", active, speed, 100);
 
             affected.push([
@@ -1835,8 +1864,7 @@ module.exports = (client) => {
               enemies = enemies.filter((e) => e != player);
               allEnemies = allEnemies.filter((e) => e != player);
 
-              monster = await Monster.findOne({ name: "Scorcher" });
-              await PushMonster(monster, 2, currentTime, null);
+              await PushMonster("Scorcher", 2, currentTime, null);
 
               activeReply = `**${player.name}** used **${active}**! It has hatched into a Scorcher.`;
             }
@@ -1848,29 +1876,30 @@ module.exports = (client) => {
               case "Boomer":
                 staticDamage = await CalculateEffect(
                   [15, 19],
-                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                  (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
                 );
                 stun = await CalculateEffect(
                   [0.12],
-                  0.995 + 0.005 * player.level
+                  ScaleByLevel(player.level, 0.01)
                 );
                 break;
               case "Shelldon":
                 staticDamage = await CalculateEffect(
                   [15, 19],
                   (overtime ? 2 : 1) *
-                    (0.8 +
-                      0.2 *
-                        allPlayers.find(
-                          (p) => p.id == player.thresholds.ownerId
-                        ).gear.active.list["Shelldon"])
+                    ScaleByLevel(
+                      allPlayers.find((p) => p.id == player.thresholds.ownerId)
+                        .gear.active.list["Shelldon"],
+                      0.1
+                    )
                 );
                 stun = await CalculateEffect(
                   [0.12],
-                  0.95 +
-                    0.05 *
-                      allPlayers.find((p) => p.id == player.thresholds.ownerId)
-                        .gear.active.list["Shelldon"]
+                  ScaleByLevel(
+                    allPlayers.find((p) => p.id == player.thresholds.ownerId)
+                      .gear.active.list["Shelldon"],
+                    0.05
+                  )
                 );
                 break;
             }
@@ -1905,7 +1934,10 @@ module.exports = (client) => {
               .join("\n")}`;
             break;
           case "Jump Away": // executioner, jumper
-            speed = await CalculateEffect([0.3], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [0.3],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, player, "Speed", active, speed, 2);
 
             affected.push([
@@ -1922,7 +1954,7 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [11, 15],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1956,7 +1988,7 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [18, 22],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -1975,8 +2007,7 @@ module.exports = (client) => {
                 monsterArray.standard[
                   Math.floor(Math.random() * monsterArray.standard.length)
                 ];
-              monster = await Monster.findOne({ name: standard });
-              await PushMonster(monster, 2, currentTime, player);
+              await PushMonster(standard, 2, currentTime, player);
 
               activeReply = `**${player.name}** used **${active}**! It spawned **1 ${standard}**.`;
             } else {
@@ -2002,22 +2033,30 @@ module.exports = (client) => {
               player.drop.experience[1] * lootIncrease
             );
 
-            activeReply = `**${player.name}** used **${active}**! Their loot drops have increased by **10%**.`;
+            activeReply = `**${
+              player.name
+            }** used **${active}**! Their loot drops have increased by **${Math.round(
+              (lootIncrease - 1) * 100
+            )}%**.`;
             break;
           case "Scratch": // scorcher, wolf
           case "Slash": // lil beetle, slasher, knight, lil grunt
             victim = opponents[Math.floor(Math.random() * opponents.length)];
 
-            if (player.name == "Knight") minMax = [3, 7];
-            if (player.name == "Lil Beetle") minMax = [8, 12];
-            if (player.name == "Lil Grunt") minMax = [5, 9];
-            if (player.name == "Scorcher") minMax = [18, 22];
-            if (player.name == "Slasher" || player.name == "Wolf")
-              minMax = [8, 12];
+            const scratchSlashDamageMap = {
+              Knight: [3, 7],
+              "Lil Beetle": [8, 12],
+              "Lil Grunt": [5, 9],
+              Scorcher: [18, 22],
+              Slasher: [8, 12],
+              Wolf: [8, 12],
+            };
+
+            minMax = scratchSlashDamageMap[player.name];
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2031,8 +2070,7 @@ module.exports = (client) => {
             }**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Scream": // lil grunt
-            monster = await Monster.findOne({ name: "Lil Grunt" });
-            await PushMonster(monster, 2, currentTime, player);
+            await PushMonster("Lil Grunt", 2, currentTime, player);
 
             activeReply = `**${player.name}** used **${active}**! It spawned **1 Lil Grunt**.`;
             break;
@@ -2042,7 +2080,7 @@ module.exports = (client) => {
             for (let i = 0; i < 2; i++) {
               staticDamage += await CalculateEffect(
                 [10, 14],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
             }
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
@@ -2074,11 +2112,14 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [...minMax],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
-            speed = await CalculateEffect([speed], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [speed],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, victim, "Speed", active, speed, duration);
 
             affected.push([
@@ -2096,7 +2137,7 @@ module.exports = (client) => {
 
             staticDamage = await CalculateEffect(
               [20, 20],
-              (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+              (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);
 
@@ -2115,7 +2156,10 @@ module.exports = (client) => {
             );
             await AddEffect(player, player, "Damage", active, staticDamage, 1);
 
-            stun = await CalculateEffect([0.24], 0.995 + 0.005 * player.level);
+            stun = await CalculateEffect(
+              [0.24],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, player, "Stun", active, stun, 1);
 
             affected.push([
@@ -2131,7 +2175,10 @@ module.exports = (client) => {
             )}`;
             break;
           case "Swordplay": // lil beetle
-            speed = await CalculateEffect([0.16], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [0.16],
+              ScaleByLevel(player.level, 0.01)
+            );
 
             for (const victim of teammates) {
               await AddEffect(player, victim, "Speed", active, speed, 2);
@@ -2149,12 +2196,15 @@ module.exports = (client) => {
               .join("\n")}`;
             break;
           case "Tail Whip": // slasher
-            stun = await CalculateEffect([0.28], 0.995 + 0.005 * player.level);
+            stun = await CalculateEffect(
+              [0.28],
+              ScaleByLevel(player.level, 0.01)
+            );
 
             for (const victim of opponents) {
               staticDamage = await CalculateEffect(
                 [8, 12],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
 
               await AddEffect(
@@ -2184,7 +2234,8 @@ module.exports = (client) => {
             break;
           case "Teleport": // juggler
             damageIncrease =
-              1 + (await CalculateEffect([0.52], 0.995 + 0.005 * player.level));
+              1 +
+              (await CalculateEffect([0.52], ScaleByLevel(player.level, 0.01)));
             await AddEffect(
               player,
               player,
@@ -2194,7 +2245,10 @@ module.exports = (client) => {
               2
             );
 
-            speed = await CalculateEffect([-0.24], 0.99 + 0.01 * player.level);
+            speed = await CalculateEffect(
+              [-0.24],
+              ScaleByLevel(player.level, 0.01)
+            );
             await AddEffect(player, player, "Speed", active, speed, 1);
 
             affected.push([
@@ -2219,7 +2273,7 @@ module.exports = (client) => {
 
                 staticDamage = await CalculateEffect(
                   [10, 14],
-                  (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                  (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
                 );
                 await AddEffect(
                   player,
@@ -2260,7 +2314,7 @@ module.exports = (client) => {
               speed = FixedFloat(victims.length * 0.28);
               speed = await CalculateEffect(
                 [speed],
-                0.99 + 0.01 * player.level
+                ScaleByLevel(player.level, 0.01)
               );
               await AddEffect(player, player, "Speed", active, speed, 1);
 
@@ -2297,7 +2351,7 @@ module.exports = (client) => {
 
         if (player.thresholds["Active Ace"]) {
           player.thresholds["Active Ace"] = false;
-          player.gear.active.list[active] -= 1;
+          player.gear.active.list[active] -= 2;
         }
 
         FilterDeadPlayers();
@@ -2322,25 +2376,25 @@ module.exports = (client) => {
             case "Active Ace":
               chance = await CalculateEffect(
                 [0.1],
-                0.8 + 0.2 * player.gear.passive.list[passive]
+                ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
 
               if (Math.random() <= chance) {
                 player.thresholds["Active Ace"] = true;
 
-                passiveReply = `**${player.name}**'s **Active Ace** activated! Active gear effect will be enhanced by 20% next turn.`;
+                passiveReply = `**${player.name}**'s **Active Ace** activated! Active gear effect will be increased by 2 levels next turn.`;
               }
               break;
             case "Bunch of Dice":
               chance = await CalculateEffect(
                 [0.25],
-                0.8 + 0.2 * player.gear.passive.list[passive]
+                ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
 
               if (Math.random() <= chance) {
                 bunchOfDiceActivated = true;
 
-                passiveReply = `**${player.name}**'s **Bunch of Dice** activated! Weapon gear effect will be enhanced by 20% next turn.`;
+                passiveReply = `**${player.name}**'s **Bunch of Dice** activated! Weapon gear effect will be increased by 2 levels next turn.`;
               }
               break;
             case "Explode-o-matic Trigger":
@@ -2354,7 +2408,7 @@ module.exports = (client) => {
                 staticDamage += await CalculateEffect(
                   [15, 15],
                   (overtime ? 2 : 1) *
-                    (0.8 + 0.2 * player.gear.passive.list[passive])
+                    ScaleByLevel(player.gear.passive.list[passive], 0.1)
                 );
               }
 
@@ -2384,7 +2438,7 @@ module.exports = (client) => {
               staticHealing = await CalculateEffect(
                 [4, 6],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.gear.passive.list[passive])
+                  ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
 
               for (const victim of teammates) {
@@ -2417,7 +2471,7 @@ module.exports = (client) => {
               staticDamage = await CalculateEffect(
                 [4, 6],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.passive.list[passive])
+                  ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
 
               for (const victim of opponents) {
@@ -2451,7 +2505,7 @@ module.exports = (client) => {
               staticHealing = await CalculateEffect(
                 [activeDamage * percentage, activeDamage * percentage],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.gear.passive.list[passive])
+                  ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
 
               await AddEffect(
@@ -2482,7 +2536,7 @@ module.exports = (client) => {
               staticDamage = await CalculateEffect(
                 [6, 10],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.passive.list[passive])
+                  ScaleByLevel(player.gear.passive.list[passive], 0.1)
               );
               await AddEffect(
                 player,
@@ -2495,7 +2549,7 @@ module.exports = (client) => {
 
               stun = await CalculateEffect(
                 [0.12],
-                0.95 + 0.05 * player.gear.passive.list[passive]
+                ScaleByLevel(player.gear.passive.list[passive], 0.05)
               );
               await AddEffect(player, victim, "Stun", "Zap in a Box", stun, 1);
 
@@ -2554,7 +2608,7 @@ module.exports = (client) => {
         affected = [];
 
         if (player.thresholds["Bunch of Dice"]) {
-          player.gear.weapon.list[weapon] += 1;
+          player.gear.weapon.list[weapon] += 2;
         }
 
         switch (weapon) {
@@ -2571,8 +2625,7 @@ module.exports = (client) => {
               player.thresholds["Chicken Stick"] -= 1;
               chickens++;
 
-              monster = await Monster.findOne({ name: "Chicken" });
-              await PushMonster(monster, 1, currentTime, player);
+              await PushMonster("Chicken", 1, currentTime, player);
             }
 
             weaponReply = `**${
@@ -2590,7 +2643,7 @@ module.exports = (client) => {
               staticHealing = await CalculateEffect(
                 [15, 15],
                 (overtime ? 0.5 : 1) *
-                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
+                  ScaleByLevel(player.gear.weapon.list[weapon], 0.1)
               );
               await AddEffect(
                 player,
@@ -2629,13 +2682,13 @@ module.exports = (client) => {
               if (victim.hitPoints >= Math.round(victim.maxHitPoints * 0.33)) {
                 stun = await CalculateEffect(
                   [1],
-                  0.95 + 0.05 * player.gear.weapon.list[weapon]
+                  ScaleByLevel(player.gear.weapon.list[weapon], 0.05)
                 );
                 await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
                 speed = await CalculateEffect(
                   [-0.22],
-                  0.9 + 0.1 * player.gear.weapon.list[weapon]
+                  ScaleByLevel(player.gear.weapon.list[weapon], 0.05)
                 );
                 await AddEffect(player, victim, "Speed", weapon, speed, 3);
 
@@ -2669,7 +2722,7 @@ module.exports = (client) => {
             const equippedOn1 = player.gear.active.equipped[0];
             const temp = player.gear.active.list[equippedOn1];
             player.gear.active.list[equippedOn1] =
-              player.gear.weapon.list[weapon];
+              player.gear.weapon.list[weapon] - 2;
 
             setTimeout(async () => {
               await HandleActive(equippedOn1, false);
@@ -2688,7 +2741,7 @@ module.exports = (client) => {
 
             speed = await CalculateEffect(
               [0.8],
-              0.9 + 0.1 * player.gear.weapon.list[weapon]
+              ScaleByLevel(player.gear.weapon.list[weapon], 0.05)
             );
             await AddEffect(player, player, "Speed", weapon, speed, 100);
 
@@ -2722,7 +2775,7 @@ module.exports = (client) => {
               staticDamage = await CalculateEffect(
                 [30, 30],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
+                  ScaleByLevel(player.gear.weapon.list[weapon], 0.1)
               );
               await AddEffect(
                 player,
@@ -2735,7 +2788,7 @@ module.exports = (client) => {
 
               stun = await CalculateEffect(
                 [1.2],
-                0.95 + 0.05 * player.gear.weapon.list[weapon]
+                ScaleByLevel(player.gear.weapon.list[weapon], 0.05)
               );
               await AddEffect(player, victim, "Stun", weapon, stun, 1);
 
@@ -2773,7 +2826,7 @@ module.exports = (client) => {
               staticDoT = await CalculateEffect(
                 [15, 15],
                 (overtime ? 2 : 1) *
-                  (0.8 + 0.2 * player.gear.weapon.list[weapon])
+                  ScaleByLevel(player.gear.weapon.list[weapon], 0.1)
               );
 
               await AddEffect(player, victim, "Damage", weapon, staticDoT, 3);
@@ -2802,8 +2855,7 @@ module.exports = (client) => {
               player.thresholds["Wolf Stick"] -= 200;
               wolves++;
 
-              monster = await Monster.findOne({ name: "Wolf" });
-              await PushMonster(monster, 1, currentTime, player);
+              await PushMonster("Wolf", 1, currentTime, player);
             }
 
             weaponReply = `**${
@@ -2822,7 +2874,7 @@ module.exports = (client) => {
 
         if (player.thresholds["Bunch of Dice"]) {
           player.thresholds["Bunch of Dice"] = false;
-          player.gear.weapon.list[weapon] -= 1;
+          player.gear.weapon.list[weapon] -= 2;
         }
 
         FilterDeadPlayers();
@@ -2851,8 +2903,7 @@ module.exports = (client) => {
                   monsterArray.standard[
                     Math.floor(Math.random() * monsterArray.standard.length)
                   ];
-                monster = await Monster.findOne({ name: standard });
-                await PushMonster(monster, 2, currentTime, player);
+                await PushMonster(standard, 2, currentTime, player);
 
                 await thread.send({
                   content: `**${player.name}** got hit! It spawned **1 ${standard}**.`,
@@ -2877,8 +2928,7 @@ module.exports = (client) => {
                 for (let i = 0; i < 6 - teammates.length && i < 2; i++) {
                   eggs++;
 
-                  monster = await Monster.findOne({ name: "Scorcher Egg" });
-                  await PushMonster(monster, 2, currentTime, player);
+                  await PushMonster("Scorcher Egg", 2, currentTime, player);
                 }
 
                 await thread.send({
@@ -2899,7 +2949,10 @@ module.exports = (client) => {
 
               damageIncrease =
                 1 +
-                (await CalculateEffect([0.5], 0.995 + 0.005 * player.level));
+                (await CalculateEffect(
+                  [0.5],
+                  ScaleByLevel(player.level, 0.01)
+                ));
               await AddEffect(
                 player,
                 player,
@@ -2909,7 +2962,10 @@ module.exports = (client) => {
                 100
               );
 
-              speed = await CalculateEffect([0.24], 0.99 + 0.01 * player.level);
+              speed = await CalculateEffect(
+                [0.24],
+                ScaleByLevel(player.level, 0.01)
+              );
               await AddEffect(
                 player,
                 player,
@@ -2949,14 +3005,12 @@ module.exports = (client) => {
 
                 if (teammates.length < 6) {
                   if (hp_x == "hp_1") {
-                    monster = await Monster.findOne({ name: "Heavy Spitter" });
-                    await PushMonster(monster, 2, currentTime, player);
+                    await PushMonster("Heavy Spitter", 2, currentTime, player);
 
                     spawned.push("Heavy Spitter");
                   }
                   if (hp_x == "hp_2") {
-                    monster = await Monster.findOne({ name: "Knight" });
-                    await PushMonster(monster, 2, currentTime, player);
+                    await PushMonster("Knight", 2, currentTime, player);
 
                     spawned.push("Knight");
                   }
@@ -2982,7 +3036,7 @@ module.exports = (client) => {
 
               staticDamage = await CalculateEffect(
                 [20, 20],
-                (overtime ? 2 : 1) * GetMonsterScaling(player.level)
+                (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
               );
 
               for (const victim of opponents) {
