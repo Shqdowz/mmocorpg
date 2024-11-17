@@ -52,9 +52,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (authorProfile.level < 28) {
       return await interaction.reply({
@@ -76,7 +74,6 @@ module.exports = {
       authorProfile.cat = cat._id;
       await authorProfile.save();
     } else {
-      await authorProfile.populate("cat");
       cat = authorProfile.cat;
     }
 
@@ -105,7 +102,6 @@ module.exports = {
           : item == "treat"
           ? "hunger"
           : "happiness";
-      await authorProfile.populate("inventory");
 
       // If the author doesn't have any <item>
       if (authorProfile.inventory[item] == 0) {

@@ -17,12 +17,10 @@ module.exports = {
     .setDescription("(DEV) Dev toolkit"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     // -=+=- Up-to-date profile -=+=-
-    // authorProfile = await User.findOne({ userId: authorProfile.userId });
+    // authorProfile = await client.fetchProfile(authorProfile.userId)
 
     // -=+=- Cooldown -=+=-
     // if (
@@ -38,19 +36,16 @@ module.exports = {
     //   });
     // }
 
-    // If refresh at midnight
+    // // If refresh at midnight
     // authorProfile.cooldowns.daily = GetRefreshTime();
     // await authorProfile.save();
-    // If refresh after duration
+    // // If refresh after duration
     // authorProfile.cooldowns.global = new Date(new Date().getTime() + 3 * 1000);
     // await authorProfile.save();
 
     // -=+=- Function returning reply -=+=-
     // if (await client.handleCooldown("global", interaction, authorProfile))
     //   return;
-
-    // -=+=- Schema connection -=+=-
-    // await authorProfile.populate("inventory");
 
     // -=+=- New schema variable add -=+=-
     // authorProfile.inventory.monsterDrops["Berserker Fist"] =
@@ -155,10 +150,5 @@ module.exports = {
     //     ],
     //   });
     // });
-
-    await interaction.reply({
-      content: `Nuh uh`,
-      ephemeral: true,
-    });
   },
 };

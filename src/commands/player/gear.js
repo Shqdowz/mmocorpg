@@ -103,9 +103,7 @@ module.exports = {
   async autocomplete(interaction, client) {
     const gearArray = client.getArray("gear");
 
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     async function GetMaterials(gear, level) {
       const materials = [];
@@ -210,8 +208,6 @@ module.exports = {
     }
 
     if (interaction.options.getSubcommand() == "upgrade") {
-      await authorProfile.populate("inventory");
-
       let choices = [];
       for (const gear of gearArray.all) {
         const type = gearArray.weapon.includes(gear)
@@ -244,9 +240,7 @@ module.exports = {
     const gearArray = client.getArray("gear");
     const dropsArray = client.getArray("drops");
 
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    }).populate("loadout");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     function ValidItem(gear) {
       const foundGear = gearArray.all.find(
@@ -673,8 +667,6 @@ module.exports = {
     }
 
     if (interaction.options.getSubcommand() == "materials") {
-      await authorProfile.populate("inventory");
-
       const gear = interaction.options.getString("gear");
 
       const validity = ValidItem(gear);
@@ -776,8 +768,6 @@ module.exports = {
       }
 
       const materials = GetMaterials(validity[1], gearLevel);
-
-      await authorProfile.populate("inventory");
 
       const result = HasMaterials(
         validity[1],

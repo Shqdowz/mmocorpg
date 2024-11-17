@@ -3,7 +3,7 @@ const { EmbedBuilder } = require("discord.js");
 
 module.exports = (client) => {
   client.alwaysHandle = async (interaction, authorProfile) => {
-    await authorProfile.populate("inventory");
+    authorProfile = await client.fetchProfile(authorProfile.userId);
 
     // Level up handle
     async function HandleLevelUp() {
@@ -90,8 +90,6 @@ module.exports = (client) => {
     }
 
     // async function DecayCat() {
-    //   await authorProfile.populate("cat");
-
     //   // Make it check for every hour starting my midnight
     //   const hour = 60 * 60 * 1000;
 

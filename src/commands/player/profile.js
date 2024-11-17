@@ -23,9 +23,7 @@ module.exports = {
 
   async execute(interaction, client) {
     const user = interaction.options.getUser("target") || interaction.user;
-    const userProfile = await User.findOne({
-      userId: user.id,
-    }).populate("guild");
+    const userProfile = await client.fetchProfile(user.id);
 
     async function GenerateEmbed() {
       const embed = new EmbedBuilder()

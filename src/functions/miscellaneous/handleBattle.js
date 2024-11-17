@@ -147,8 +147,6 @@ module.exports = (client) => {
     async function PushUser(profile, group) {
       playerId++;
 
-      await profile.populate("loadout");
-
       profile.isBusy = true;
       await profile.save();
 
@@ -246,7 +244,7 @@ module.exports = (client) => {
 
         level: profile.level,
         hitPoints: profile.hitPoints,
-        speed: profile.speed,
+        speed: Math.round(profile.speed * ScaleByLevel(profile.level, 0.005)),
         interval: FixedFloat(1 / profile.speed),
         next: time + FixedFloat(1 / profile.speed),
 
@@ -343,13 +341,9 @@ module.exports = (client) => {
     }
 
     // -=+=- Ally team -=+=-
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    }).populate("party");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (authorProfile.party && authorProfile.party.members.length > 1) {
-      await authorProfile.party.populate("members.profile");
-
       if (
         authorProfile.party.leader._id.toString() !=
         authorProfile._id.toString()
@@ -375,6 +369,7 @@ module.exports = (client) => {
       }
 
       for (const member of authorProfile.party.members) {
+        member.profile = await client.fetchProfile(member.profile.userId);
         await PushUser(member.profile, 1);
       }
     } else {
@@ -3150,8 +3145,6 @@ module.exports = (client) => {
 
     // -=+=- Loot drops -=+=-
     for (const ally of allAllies.filter((p) => p.user)) {
-      await ally.profile.populate("inventory");
-
       let loot = [];
       let mocoins = 0;
       let experience = 0;

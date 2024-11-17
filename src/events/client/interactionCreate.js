@@ -12,9 +12,7 @@ module.exports = {
   name: "interactionCreate",
 
   async execute(interaction, client) {
-    let authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    }).populate("guild");
+    let authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (!authorProfile) {
       const achievement = new Achievement({

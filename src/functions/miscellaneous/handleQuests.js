@@ -9,23 +9,18 @@ const wait = require("node:timers/promises").setTimeout;
 
 module.exports = (client) => {
   client.handleQuests = async (interaction, userProfile, extra) => {
+    // Get the newest updated profile
+    userProfile = await client.fetchProfile(userProfile.userId);
+
     if (!userProfile.quests) return;
 
     async function UpdateQuest(quest, progress) {
-      // Get the newest updated profile
-      userProfile = await User.findOne({ userId: userProfile.userId });
-
       quest.progress = Math.min(quest.goal, quest.progress + progress);
       quest.completed = quest.progress == quest.goal;
 
       await userProfile.markModified("quests");
       await userProfile.save();
     }
-
-    if (userProfile.cat) await userProfile.populate("cat");
-    if (userProfile.guild) await userProfile.populate("guild");
-    if (userProfile.party) await userProfile.populate("party");
-    await userProfile.populate("inventory");
 
     const { options, commandName } = interaction;
 

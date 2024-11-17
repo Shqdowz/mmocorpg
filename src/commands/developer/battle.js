@@ -14,9 +14,7 @@ module.exports = {
     const monsterArray = client.getArray("monsters");
 
     // Enemies
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    }).populate("party");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const startAllies = authorProfile.party
       ? authorProfile.party.members.length

@@ -9,12 +9,10 @@ const wait = require("node:timers/promises").setTimeout;
 
 module.exports = (client) => {
   client.handleAchievements = async (interaction, userProfile, extra) => {
-    async function UpdateAchievement(achievement, progress) {
-      // Get the newest updated profile
-      userProfile = await User.findOne({ userId: userProfile.userId }).populate(
-        "achievement"
-      );
+    // Get the newest updated profile
+    userProfile = await client.fetchProfile(userProfile.userId);
 
+    async function UpdateAchievement(achievement, progress) {
       achievement.progress = Math.min(
         achievement.goal,
         achievement.progress + progress
@@ -32,8 +30,6 @@ module.exports = (client) => {
 
       await userProfile.achievement.save();
     }
-
-    await userProfile.populate("achievement");
 
     const { options, commandName } = interaction;
 

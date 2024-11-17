@@ -112,11 +112,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
-
-    await authorProfile.populate("guild");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (authorProfile.level < 16) {
       return await interaction.reply({

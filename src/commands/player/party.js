@@ -49,7 +49,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({ userId: interaction.user.id });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const author = interaction.user;
 
@@ -69,20 +69,11 @@ module.exports = {
       authorProfile.party = party._id;
       await authorProfile.save();
     }
-    await authorProfile.populate("party");
-    await authorProfile.party.populate("leader");
-    await authorProfile.party.populate("members.profile");
 
     const target = interaction.options.getUser("target");
     let targetProfile;
     if (target) {
-      targetProfile = await User.findOne({ userId: target.id });
-
-      if (targetProfile.party) {
-        await targetProfile.populate("party");
-        await targetProfile.party.populate("leader");
-        await targetProfile.party.populate("members.profile");
-      }
+      targetProfile = await client.fetchProfile(target.id);
     }
 
     const maxMembers = 3;
@@ -264,12 +255,9 @@ module.exports = {
 
       let clicked = false;
       collector.on("collect", async (i) => {
-        const updatedAuthorProfile = await User.findOne({
-          userId: interaction.user.id,
-        });
-        await updatedAuthorProfile.populate("party");
+        authorProfile = await client.fetchProfile(interaction.user.id);
 
-        if (updatedAuthorProfile.party.members.length >= 3) {
+        if (authorProfile.party.members.length >= 3) {
           return await i.reply({
             content: `Unfortunately, the party has already reached the maximum players just now.`,
             ephemeral: true,

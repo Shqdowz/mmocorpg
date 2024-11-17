@@ -17,9 +17,7 @@ module.exports = {
     .setDescription("Open a crate"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({ userId: interaction.user.id });
-
-    await authorProfile.populate("inventory");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const dropsArray = client.getArray("drops");
 

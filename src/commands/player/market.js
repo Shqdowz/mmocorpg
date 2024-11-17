@@ -47,9 +47,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (authorProfile.level < 10) {
       return await interaction.reply({
@@ -61,7 +59,6 @@ module.exports = {
     if (interaction.options.getSubcommand() == "buy") {
       const item = interaction.options.getString("item");
       const amount = interaction.options.getNumber("amount") || 1;
-      await authorProfile.populate("inventory");
 
       const discount = amount >= 10 ? 0.9 : amount >= 5 ? 0.95 : 1;
 

@@ -10,10 +10,7 @@ module.exports = {
     .setDescription("Claim your daily reward"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
-    await authorProfile.populate("inventory");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (await client.handleCooldown("daily", interaction, authorProfile))
       return;

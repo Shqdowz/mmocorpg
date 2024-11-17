@@ -17,11 +17,7 @@ module.exports = {
     .setDescription("View your inventory"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
-
-    await authorProfile.populate("inventory");
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const description = `${client.getEmoji("mocoin")} mo.coins: **${
       authorProfile.inventory["mocoins"]
