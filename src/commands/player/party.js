@@ -10,7 +10,6 @@ const {
 const mongoose = require("mongoose");
 
 // -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
 const Party = require("../../schemas/partySchema");
 
 module.exports = {
@@ -138,7 +137,7 @@ module.exports = {
       collector.on("collect", async (i) => {
         collector.resetTimer({ time: 30 * 1000 });
 
-        const clickerProfile = await User.findOne({ userId: i.user.id });
+        const clickerProfile = await client.fetchProfile(i.user.id);
 
         const memberIndex = authorProfile.party.members.findIndex(
           (member) =>

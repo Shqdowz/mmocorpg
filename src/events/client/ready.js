@@ -11,11 +11,10 @@ module.exports = {
     setInterval(client.pickPresence, 60 * 1000);
 
     // Reset busy users
-    const busyUsers = await User.find({ isBusy: true });
-    for (const user of busyUsers) {
+    (await User.find({ isBusy: true })).forEach(async (user) => {
       user.isBusy = false;
       await user.save();
-    }
+    });
 
     // Delete all threads
     const guild = await client.guilds.fetch("1250387871517638708");

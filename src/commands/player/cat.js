@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 
 // -=+=- Schemas -=+=-
 const Cat = require("../../schemas/catSchema");
-const User = require("../../schemas/userSchema");
 
 module.exports = {
   data: new SlashCommandBuilder()

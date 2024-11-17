@@ -1,9 +1,6 @@
 // -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
-// -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("settings")
@@ -21,9 +18,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const setting = interaction.options.getString("setting");
     const enabled =

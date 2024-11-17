@@ -1,9 +1,6 @@
 // -=+=- Dependencies -=+=-
 const { EmbedBuilder } = require("discord.js");
 
-// -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
-
 // -=+=- Utility -=+=-
 const wait = require("node:timers/promises").setTimeout;
 

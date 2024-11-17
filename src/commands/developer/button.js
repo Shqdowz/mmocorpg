@@ -8,18 +8,13 @@ const {
   ComponentType,
 } = require("discord.js");
 
-// -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("button")
     .setDescription("(DEV) Example button"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const embeds = [
       new EmbedBuilder()

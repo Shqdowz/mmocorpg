@@ -20,9 +20,7 @@ module.exports = {
         )
     ),
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     const category = interaction.options.getString("category");
 

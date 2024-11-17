@@ -1,9 +1,6 @@
 // -=+=- Dependencies -=+=-
 const { SlashCommandBuilder } = require("discord.js");
 
-// -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("battle")

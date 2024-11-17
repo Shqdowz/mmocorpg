@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 
 // -=+=- Schemas -=+=-
 const Guild = require("../../schemas/guildSchema");
-const User = require("../../schemas/userSchema");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -322,11 +321,9 @@ module.exports = {
     }
 
     if (interaction.options.getSubcommand() == "kick") {
-      const user = await interaction.options.getUser("target");
+      const user = interaction.options.getUser("target");
 
-      const targetProfile = await User.findOne({
-        userId: user.id,
-      });
+      const targetProfile = await client.fetchProfile(user.id);
 
       const guild = targetProfile.guild;
 
@@ -354,7 +351,7 @@ module.exports = {
         });
       }
 
-      const memberToKick = await User.findOne({ userId: user.id });
+      const memberToKick = await client.fetchProfile(user.id);
       guild.members.pull(memberToKick._id);
       await guild.save();
 
@@ -474,9 +471,7 @@ module.exports = {
           });
         }
 
-        const acceptedUserProfile = await User.findOne({
-          username: user.username,
-        });
+        const acceptedUserProfile = await client.fetchProfile(user.id);
         acceptedUserProfile.guild = guild._id;
         acceptedUserProfile.pendingJoinRequest = null;
         await acceptedUserProfile.save();

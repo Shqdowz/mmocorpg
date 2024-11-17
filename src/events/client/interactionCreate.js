@@ -75,7 +75,7 @@ module.exports = {
       const target = interaction.options.getUser("target");
 
       if (target) {
-        let targetProfile = await User.findOne({ userId: target.id });
+        let targetProfile = await client.fetchProfile(target.id);
 
         if (!targetProfile) {
           const achievement = new Achievement({

@@ -8,7 +8,6 @@ const {
 } = require("discord.js");
 
 // -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
 const Monster = require("../../schemas/monsterSchema");
 
 // -=+=- Utilities -=+=-

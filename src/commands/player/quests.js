@@ -1,18 +1,13 @@
 // -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
-// -=+=- Schemas -=+=-
-const User = require("../../schemas/userSchema");
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("quests")
     .setDescription("View your current quests"),
 
   async execute(interaction, client) {
-    const authorProfile = await User.findOne({
-      userId: interaction.user.id,
-    });
+    const authorProfile = await client.fetchProfile(interaction.user.id);
 
     if (authorProfile.level < 4) {
       return await interaction.reply({
