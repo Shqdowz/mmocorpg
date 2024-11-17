@@ -40,6 +40,8 @@ module.exports = {
         loadout: loadout._id,
       });
       await authorProfile.save();
+
+      return await client.handleTutorial(interaction, authorProfile);
     }
 
     if (authorProfile.username != interaction.user.username) {

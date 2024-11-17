@@ -1231,7 +1231,7 @@ module.exports = (client) => {
             break;
           case "Turbo Pills":
             staticHealing = await CalculateEffect(
-              [16, 20],
+              [14, 18],
               (overtime ? 0.5 : 1) *
                 ScaleByLevel(player.gear.active.list[active], 0.1)
             );
@@ -1948,7 +1948,7 @@ module.exports = (client) => {
             victim = opponents[Math.floor(Math.random() * opponents.length)];
 
             staticDamage = await CalculateEffect(
-              [11, 15],
+              [7, 11],
               (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
             );
             await AddEffect(player, victim, "Damage", active, staticDamage, 1);

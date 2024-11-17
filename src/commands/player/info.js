@@ -10,7 +10,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setTitle("Bot info")
       .setDescription(
-        "MMOCORPG is a game bot designed around Supercell's mo.co."
+        "MMOCORPG is a text-based game bot based on Supercell's mo.co."
       )
       .setThumbnail(client.user.displayAvatarURL())
       .addFields([
