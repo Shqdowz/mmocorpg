@@ -46,7 +46,9 @@ module.exports = {
             name: "Stats",
             value: `${client.getEmoji("health")} HP: **${
               userProfile.hitPoints
-            }**\n${client.getEmoji("speed")} SPD: **${userProfile.speed}**`,
+            }**\n${client.getEmoji("speed")} SPD: **${userProfile.speed.toFixed(
+              2
+            )}**`,
             inline: true,
           },
         ])
