@@ -490,6 +490,8 @@ module.exports = (client) => {
         });
       }
 
+      const skipTurn = buttons.every((button) => button.data.disabled);
+
       const effectsButton = new ButtonBuilder()
         .setCustomId(`effects:${interaction.id}`)
         .setEmoji(client.getEmoji("effects"))
@@ -516,7 +518,7 @@ module.exports = (client) => {
           }
         }
 
-        let skills = [...player.skills];
+        const skills = player.skills.map((skill) => [...skill]);
 
         // Change skill chance if necessary
         switch (player.name) {
@@ -564,11 +566,6 @@ module.exports = (client) => {
               ChangeChance([
                 ["Charge Up", 0],
                 ["Charge", 100],
-              ]);
-            } else {
-              ChangeChance([
-                ["Charge Up", 67],
-                ["Charge", 33],
               ]);
             }
             break;
@@ -649,7 +646,7 @@ module.exports = (client) => {
             }
             break;
           case "Lil Grunt":
-            if (enemies.length >= 6) {
+            if (enemies.length >= 6 || player.thresholds.screamed) {
               ChangeChance([
                 ["Scream", 0],
                 ["Slash", 100],
@@ -709,37 +706,41 @@ module.exports = (client) => {
 
         await wait(overtime ? 1.5 * 1000 : 3 * 1000);
       } else {
-        const collector = turnReply.createMessageComponentCollector({
-          componentType: ComponentType.Button,
-          filter: (i) =>
-            i.user.username == player.name &&
-            i.customId.endsWith(interaction.id),
-          time: overtime ? 7.5 * 1000 : 15 * 1000,
-        });
+        if (skipTurn) {
+          active = "skip";
+        } else {
+          const collector = turnReply.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            filter: (i) =>
+              i.user.username == player.name &&
+              i.customId.endsWith(interaction.id),
+            time: overtime ? 7.5 * 1000 : 15 * 1000,
+          });
 
-        collector.on("collect", async (i) => {
-          if (i.customId == `effects:${interaction.id}`) {
-            await i.reply({
-              content: `${
-                player.activeEffects.length
-                  ? `**${player.name}**'s effects:\n${player.activeEffects
-                      .map((effect) => MapEffect(effect))
-                      .join("\n")}`
-                  : `**${player.name}** currently has no effects.`
-              }`,
-              ephemeral: true,
-            });
-          } else {
-            active = player.gear.active.equipped[i.customId.slice(0, 1)];
-            collector.stop();
-          }
-        });
+          collector.on("collect", async (i) => {
+            if (i.customId == `effects:${interaction.id}`) {
+              await i.reply({
+                content: `${
+                  player.activeEffects.length
+                    ? `**${player.name}**'s effects:\n${player.activeEffects
+                        .map((effect) => MapEffect(effect))
+                        .join("\n")}`
+                    : `**${player.name}** currently has no effects.`
+                }`,
+                ephemeral: true,
+              });
+            } else {
+              active = player.gear.active.equipped[i.customId.slice(0, 1)];
+              collector.stop();
+            }
+          });
 
-        // Wait or advance forward when collected
-        await Promise.race([
-          new Promise((resolve) => collector.on("end", resolve)),
-          wait(overtime ? 7.5 * 1000 : 15 * 1000),
-        ]);
+          // Wait or advance forward when collected
+          await Promise.race([
+            new Promise((resolve) => collector.on("end", resolve)),
+            wait(overtime ? 7.5 * 1000 : 15 * 1000),
+          ]);
+        }
       }
 
       // -=+=- Turn variables -=+=-
@@ -1224,7 +1225,7 @@ module.exports = (client) => {
               affected.push([
                 AffectedText(victim),
                 ` **-${realDamage}** ${client.getEmoji("damage")} (3)`,
-                `, **${speed}** ${client.getEmoji("speed")} (3)`,
+                `, **${speed.toFixed(2)}** ${client.getEmoji("speed")} (3)`,
               ]);
             }
 
@@ -1258,7 +1259,7 @@ module.exports = (client) => {
             affected.push([
               AffectedText(player),
               ` **+${staticHealing}** ${client.getEmoji("health")} (2)`,
-              `, **+${speed}** ${client.getEmoji("speed")} (2)`,
+              `, **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (2)`,
             ]);
 
             activeReply = `**${
@@ -1496,7 +1497,7 @@ module.exports = (client) => {
               ],
               [
                 AffectedText(player),
-                ` **+${speed}** ${client.getEmoji("speed")} (1)`,
+                ` **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (1)`,
               ]
             );
 
@@ -1557,7 +1558,7 @@ module.exports = (client) => {
               ` **${Math.round(
                 (1 - damageReduction) * 100
               )}%** ${client.getEmoji("damage_reduction")} (2)`,
-              `, **+${speed}** ${client.getEmoji("speed")} (3)`,
+              `, **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (3)`,
             ]);
 
             activeReply = `**${
@@ -1842,7 +1843,7 @@ module.exports = (client) => {
 
             affected.push([
               AffectedText(player),
-              ` **${speed}** ${client.getEmoji("speed")} (∞)`,
+              ` **${speed.toFixed(2)}** ${client.getEmoji("speed")} (∞)`,
               `, **${Math.round(
                 (damageIncrease - 1) * 100
               )}%** ${client.getEmoji("damage_increase")} (∞)`,
@@ -1942,7 +1943,7 @@ module.exports = (client) => {
 
             affected.push([
               AffectedText(player),
-              ` **+${speed}** ${client.getEmoji("speed")} (2)`,
+              ` **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (2)`,
             ]);
 
             activeReply = `**${
@@ -2070,6 +2071,8 @@ module.exports = (client) => {
             }**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Scream": // lil grunt
+            player.thresholds.screamed = true;
+
             await PushMonster("Lil Grunt", 2, currentTime, player);
 
             activeReply = `**${player.name}** used **${active}**! It spawned **1 Lil Grunt**.`;
@@ -2125,7 +2128,9 @@ module.exports = (client) => {
             affected.push([
               AffectedText(victim),
               ` **-${dealtDamage}** ${client.getEmoji("damage")} (1)`,
-              `, **${speed}** ${client.getEmoji("speed")} (${duration})`,
+              `, **${speed.toFixed(2)}** ${client.getEmoji(
+                "speed"
+              )} (${duration})`,
             ]);
 
             activeReply = `**${player.name}** used **${active}** on **${
@@ -2185,7 +2190,7 @@ module.exports = (client) => {
 
               affected.push([
                 AffectedText(victim),
-                ` **+${speed}** ${client.getEmoji("speed")} (2)`,
+                ` **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (2)`,
               ]);
             }
 
@@ -2256,7 +2261,7 @@ module.exports = (client) => {
               ` **${Math.round(
                 (damageIncrease - 1) * 100
               )}%** ${client.getEmoji("damage_increase")} (2)`,
-              `, **${speed}** ${client.getEmoji("speed")} (1)`,
+              `, **${speed.toFixed(2)}** ${client.getEmoji("speed")} (1)`,
             ]);
 
             activeReply = `**${
@@ -2320,7 +2325,7 @@ module.exports = (client) => {
 
               affected.push([
                 AffectedText(player),
-                ` **${speed}** ${client.getEmoji("speed")} (1)`,
+                ` **${speed.toFixed(2)}** ${client.getEmoji("speed")} (1)`,
               ]);
             }
 
@@ -2337,6 +2342,9 @@ module.exports = (client) => {
             }
             break;
 
+          case "skip":
+            activeReply = `**${player.name}** doesn't have any valid moves. Skipping turn...`;
+            break;
           default:
             activeReply = `**${player.name}**'s time ran out.`;
             break;
@@ -2697,7 +2705,7 @@ module.exports = (client) => {
                   ` **${Math.round(stun * 100)}%** ${client.getEmoji(
                     "stun"
                   )} (1)`,
-                  `, **${speed}** ${client.getEmoji("speed")} (3)`,
+                  `, **${speed.toFixed(2)}** ${client.getEmoji("speed")} (3)`,
                 ]);
               }
             }
@@ -2747,7 +2755,7 @@ module.exports = (client) => {
 
             affected.push([
               AffectedText(player),
-              ` **+${speed}** ${client.getEmoji("speed")} (∞)`,
+              ` **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (∞)`,
             ]);
 
             weaponReply = `**${
@@ -2980,7 +2988,7 @@ module.exports = (client) => {
                 ` **${Math.round(
                   (damageIncrease - 1) * 100
                 )}%** ${client.getEmoji("damage_increase")} (∞)`,
-                `, **+${speed}** ${client.getEmoji("speed")} (∞)`,
+                `, **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (∞)`,
               ]);
 
               await thread.send({
