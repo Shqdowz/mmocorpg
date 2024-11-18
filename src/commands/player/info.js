@@ -1,5 +1,6 @@
 // -=+=- Dependencies -=+=-
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { version } = require("../../../package.json");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,6 +30,9 @@ module.exports = {
             "This project is unofficial and is not endorsed by Supercell. For more information, see Supercell's [Fan Content Policy](https://www.supercell.com/fan-content-policy).",
         },
       ])
+      .setFooter({
+        text: `v${version}`,
+      })
       .setColor("#dd7f9d");
 
     await interaction.reply({
