@@ -234,44 +234,51 @@ module.exports = (client) => {
         }
       }
 
-      const monster = {
-        id: playerId,
-        index: players.length,
-        name: profile.name,
-        user: null,
-        group: group,
+      function CreateMonster(level, hitPoints) {
+        const monsterSpeed = FixedFloat(
+          profile.speed * ScaleByLevel(level, 0.005)
+        );
 
-        level: profile.level,
-        hitPoints: profile.hitPoints,
-        speed: Math.round(profile.speed * ScaleByLevel(profile.level, 0.005)),
-        interval: FixedFloat(1 / profile.speed),
-        next: time + FixedFloat(1 / profile.speed),
+        return {
+          id: playerId,
+          index: players.length,
+          name: profile.name,
+          user: null,
+          group: group,
 
-        maxHitPoints: profile.hitPoints,
-        baseSpeed: profile.speed,
+          level: level,
+          hitPoints: hitPoints,
+          speed: monsterSpeed,
+          interval: FixedFloat(1 / monsterSpeed),
+          next: time + FixedFloat(1 / monsterSpeed),
 
-        skills: profile.skills,
+          maxHitPoints: hitPoints,
+          baseSpeed: monsterSpeed,
 
-        tier: profile.tier,
-        drop: profile.drop,
+          skills: profile.skills,
 
-        stats: {
-          "Damage Dealt": 0,
-          "Damage Taken": 0,
-          "Healing Done": 0,
-          "Kills Made": 0,
-          "Turns Taken": 0,
-        },
-        thresholds: profile.thresholds,
+          tier: profile.tier,
+          drop: profile.drop,
 
-        activeEffects: [],
-      };
+          stats: {
+            "Damage Dealt": 0,
+            "Damage Taken": 0,
+            "Healing Done": 0,
+            "Kills Made": 0,
+            "Turns Taken": 0,
+          },
+          thresholds: profile.thresholds,
+
+          activeEffects: [],
+        };
+      }
 
       if (from) {
         if (profile.name == "Lil Grunt" && from.name == "Lil Grunt") {
-          monster.level = from.level;
-          monster.hitPoints = from.hitPoints;
-          monster.maxHitPoints = from.maxHitPoints;
+          const level = from.level;
+          const hitPoints = from.hitPoints;
+
+          const monster = CreateMonster(level, hitPoints);
 
           PushToPlayers(monster, group);
           return;
@@ -290,12 +297,12 @@ module.exports = (client) => {
 
           const [gear, type] = gearTypeMap[name];
 
-          monster.level = Math.max(1, 10 * from.gear[type].list[gear] - 10);
-
-          monster.maxHitPoints = Math.round(
-            monster.maxHitPoints * ScaleByLevel(from.gear[type].list[gear], 0.2)
+          const level = Math.max(1, 10 * from.gear[type].list[gear] - 10);
+          const hitPoints = Math.round(
+            profile.hitPoints * ScaleByLevel(from.gear[type].list[gear], 0.2)
           );
-          monster.hitPoints = monster.maxHitPoints;
+
+          const monster = CreateMonster(level, hitPoints);
 
           monster.thresholds.ownerId = from.id;
 
@@ -303,36 +310,28 @@ module.exports = (client) => {
           return;
         }
 
-        const monsterLevel = Math.max(
+        const level = Math.max(
           1,
-          Math.floor(
-            Math.random() * (averageLevel + 3 - (averageLevel - 3) + 1)
-          ) +
-            (averageLevel - 3)
+          Math.floor(Math.random() * 5) + (averageLevel - 4)
+        );
+        const hitPoints = Math.round(
+          profile.hitPoints * ScaleByLevel(level, 0.04)
         );
 
-        monster.level = monsterLevel;
-        monster.maxHitPoints = Math.round(
-          monster.maxHitPoints * ScaleByLevel(monster.level, 0.04)
-        );
-        monster.hitPoints = monster.maxHitPoints;
+        const monster = CreateMonster(level, hitPoints);
 
         PushToPlayers(monster, group);
         return;
       } else {
-        const monsterLevel = Math.max(
+        const level = Math.max(
           1,
-          Math.floor(
-            Math.random() * (averageLevel + 3 - (averageLevel - 3) + 1)
-          ) +
-            (averageLevel - 3)
+          Math.floor(Math.random() * 5) + (averageLevel - 4)
+        );
+        const hitPoints = Math.round(
+          profile.hitPoints * ScaleByLevel(level, 0.04)
         );
 
-        monster.level = monsterLevel;
-        monster.maxHitPoints = Math.round(
-          monster.maxHitPoints * ScaleByLevel(monster.level, 0.04)
-        );
-        monster.hitPoints = monster.maxHitPoints;
+        const monster = CreateMonster(level, hitPoints);
 
         PushToPlayers(monster, group);
         return;
