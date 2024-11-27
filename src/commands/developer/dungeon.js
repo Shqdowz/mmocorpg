@@ -215,17 +215,17 @@ module.exports = {
 
       if (!moved) {
         current.nesw.forEach((direction, index) => {
-          const isValidDirection =
-            direction !== null &&
-            dungeon.includes(grid[direction]) &&
-            !grid[direction].ventured &&
-            energy != 0;
+          const invalidDirection =
+            direction == null ||
+            !dungeon.includes(grid[direction]) ||
+            grid[direction].ventured ||
+            energy == 0;
 
           const button = new ButtonBuilder()
             .setCustomId(`movement_${index}:${interaction.id}`)
             .setEmoji(["⬆️", "➡️", "⬇️", "⬅️"][index])
             .setStyle(ButtonStyle.Primary)
-            .setDisabled(!isValidDirection);
+            .setDisabled(invalidDirection);
 
           component.addComponents(button);
         });
@@ -300,64 +300,27 @@ module.exports = {
     }
 
     function GetColor() {
-      let color;
+      const colorMap = {
+        Chaos: "#ff0000",
+        Despair: "#000000",
+        Healing: "#00ff00",
+        Knowledge: "#0000ff",
+        Summoning: "#800080",
+        Wealth: "#ffff00",
+        Bazaar: "#ffa500",
+        Boss: "#800080",
+        Fight: "#ff00ff",
+        Oblation: "#ff0000",
+        Protect: "#ffffff",
+        Puzzle: "#0000ff",
+        Respite: "#00ff00",
+        Treasure: "#ffff00",
+        Vault: "#000000",
+      };
 
-      switch (current.type) {
-        case "Altar":
-          switch (current.subtype) {
-            case "Chaos":
-              color = "#ff0000"; // red
-              break;
-            case "Despair":
-              color = "#000000"; // black
-              break;
-            case "Healing":
-              color = "00ff00"; // green
-              break;
-            case "Knowledge":
-              color = "#0000ff"; // blue
-              break;
-            case "Summoning":
-              color = "#800080"; // purple
-              break;
-            case "Wealth":
-              color = "#ffff00"; // yellow
-              break;
-          }
-          break;
-        case "Bazaar":
-          color = "#ffa500"; // orange
-          break;
-        case "Boss":
-          color = "#800080"; // purple
-          break;
-        case "Fight":
-          color = "#ff00ff"; // pink
-          break;
-        case "Oblation":
-          color = "#ff0000"; // red
-          break;
-        case "Protect":
-          color = "#ffffff"; // white
-          break;
-        case "Puzzle":
-          color = "#0000ff"; // blue
-          break;
-        case "Respite":
-          color = "#00ff00"; // green
-          break;
-        case "Treasure":
-          color = "#ffff00"; // yellow
-          break;
-        case "Vault":
-          color = "#000000"; // black
-          break;
-        default:
-          color = "#000000"; // black
-          break;
-      }
+      if (current.type == "Altar") return colorMap[current.subtype];
 
-      return color;
+      return colorMap[current.type] || "#000000";
     }
 
     const randomSize = Math.random();
@@ -412,7 +375,7 @@ module.exports = {
         if (i.customId == `movement_teleport:${interaction.id}`) {
           energy = Math.floor(energy / 2);
 
-          dungeon[dungeon.indexOf(current)].ventured = true;
+          current.ventured = true;
 
           const availableRooms = dungeon.filter(
             (chamber) => !chamber.ventured && chamber.id != current.id
@@ -423,11 +386,10 @@ module.exports = {
         } else {
           energy--;
 
-          dungeon[dungeon.indexOf(current)].ventured = true;
+          current.ventured = true;
 
-          current = grid[current.nesw[parseInt(i.customId.slice(-1))]];
+          current = grid[current.nesw[parseInt(i.customId[9])]];
         }
-
         await i.update(CreateReply(true));
       } else if (i.customId.includes("chamber")) {
         // chamber
