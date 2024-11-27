@@ -11,12 +11,7 @@ module.exports = (client) => {
     "🗡️ raiding a dungeon",
     `📜 completing quests`,
   ];
-  const status = [
-    "online",
-    "idle",
-    "dnd",
-    // "invisible"
-  ];
+  const status = ["online", "idle", "dnd"];
 
   client.pickPresence = async () => {
     const presence = {
