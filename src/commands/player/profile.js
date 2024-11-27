@@ -129,10 +129,12 @@ module.exports = {
     });
 
     collector.on("end", async () => {
-      await interaction.editReply({
-        embeds: [await GenerateEmbed()],
-        components: [],
-      });
+      if (reply.components.length) {
+        await interaction.editReply({
+          embeds: [await GenerateEmbed()],
+          components: [],
+        });
+      }
     });
   },
 };

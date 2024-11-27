@@ -20,6 +20,9 @@ const userSchema = new Schema({
   hitPoints: { type: Number, default: 100, min: 0, max: 500 },
   speed: { type: Number, default: 1.0, min: 0.33, max: 5.0 },
 
+  isBusy: { type: Boolean, default: false },
+  dailyStreak: { type: Number, default: 0 },
+
   // Schemas
   achievement: { type: Schema.Types.ObjectId, ref: "Achievement" },
   cat: {
@@ -38,22 +41,17 @@ const userSchema = new Schema({
   },
   party: { type: Schema.Types.ObjectId, ref: "Party" },
 
-  isBusy: { type: Boolean, default: false },
-
+  // Misc
   cooldowns: {
     global: Date,
-
     daily: Date,
     quests: Date,
-
     pet: Date,
   },
 
   settings: {
     "Always Ready": { type: Boolean, default: false },
   },
-
-  dailyStreak: { type: Number, default: 0 },
 
   quests: { type: Array, default: [] },
 
