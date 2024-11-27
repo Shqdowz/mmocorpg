@@ -1,56 +1,32 @@
 // -=+=- Dependencies -=+=-
-const mongoose = require("mongoose");
 const { EmbedBuilder } = require("discord.js");
-
-// -=+=- Schemas -=+=-
-const Achievement = require("../../schemas/achievementSchema");
-const Inventory = require("../../schemas/inventorySchema");
-const Loadout = require("../../schemas/loadoutSchema");
-const User = require("../../schemas/userSchema");
 
 module.exports = {
   name: "interactionCreate",
 
   async execute(interaction, client) {
-    let authorProfile = await client.fetchProfile(interaction.user.id);
-
-    if (!authorProfile) {
-      const achievement = new Achievement({
-        _id: new mongoose.Types.ObjectId(),
-      });
-      await achievement.save();
-
-      const inventory = new Inventory({
-        _id: new mongoose.Types.ObjectId(),
-      });
-      await inventory.save();
-
-      const loadout = new Loadout({
-        _id: new mongoose.Types.ObjectId(),
-      });
-      await loadout.save();
-
-      authorProfile = new User({
-        _id: new mongoose.Types.ObjectId(),
-        userId: interaction.user.id,
-        username: interaction.user.username,
-
-        achievement: achievement._id,
-        inventory: inventory._id,
-        loadout: loadout._id,
-      });
-      await authorProfile.save();
-
-      return await client.handleTutorial(interaction, authorProfile);
-    }
-
-    if (authorProfile.username != interaction.user.username) {
-      authorProfile.username = interaction.user.username;
-      await authorProfile.save();
-    }
-
     if (interaction.isChatInputCommand()) {
-      // If the author is blacklisted
+      // Fetch user profile
+      const authorProfile = await client.fetchProfile(interaction.user.id);
+
+      if (authorProfile.username != interaction.user.username) {
+        authorProfile.username = interaction.user.username;
+        await authorProfile.save();
+      }
+
+      // Fetch target profile
+      const target = interaction.options.getUser("target");
+
+      if (target) {
+        const targetProfile = await client.fetchProfile(target.id);
+
+        if (targetProfile.username != target.username) {
+          targetProfile.username = target.username;
+          await targetProfile.save();
+        }
+      }
+
+      // Check for limitations
       if (authorProfile.blacklist) {
         return await interaction.reply({
           content:
@@ -59,7 +35,6 @@ module.exports = {
         });
       }
 
-      // If the author is banned
       if (authorProfile.ban - Date.now() > 0) {
         const next = Math.floor(new Date(authorProfile.ban.getTime()) / 1000);
 
@@ -71,50 +46,8 @@ module.exports = {
         authorProfile.ban = null;
         await authorProfile.save();
       }
-    }
 
-    if (interaction.isChatInputCommand()) {
-      const target = interaction.options.getUser("target");
-
-      if (target) {
-        let targetProfile = await client.fetchProfile(target.id);
-
-        if (!targetProfile) {
-          const achievement = new Achievement({
-            _id: new mongoose.Types.ObjectId(),
-          });
-          await achievement.save();
-
-          const inventory = new Inventory({
-            _id: new mongoose.Types.ObjectId(),
-          });
-          await inventory.save();
-
-          const loadout = new Loadout({
-            _id: new mongoose.Types.ObjectId(),
-          });
-          await loadout.save();
-
-          const targetProfile = new User({
-            _id: new mongoose.Types.ObjectId(),
-            userId: target.id,
-            username: target.username,
-
-            achievement: achievement._id,
-            inventory: inventory._id,
-            loadout: loadout._id,
-          });
-          await targetProfile.save();
-        }
-
-        if (targetProfile.username != target.username) {
-          targetProfile.username = target.username;
-          await targetProfile.save();
-        }
-      }
-    }
-
-    if (interaction.isChatInputCommand()) {
+      // Handle command
       if (await client.handleCooldown("global", interaction, authorProfile))
         return;
 
