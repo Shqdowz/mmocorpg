@@ -78,17 +78,7 @@ module.exports = {
 
     async function ConvertToEmoji(value) {
       const greens = Math.ceil(value / 10);
-
-      let response = "";
-      for (let i = 0; i < 10; i++) {
-        if (i < greens) {
-          response += "🟩";
-        } else {
-          response += "⬛";
-        }
-      }
-
-      return response;
+      return "🟩".repeat(greens) + "⬛".repeat(10 - greens);
     }
 
     if (interaction.options.getSubcommand() == "give") {
