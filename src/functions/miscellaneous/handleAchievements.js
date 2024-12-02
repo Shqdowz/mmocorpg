@@ -43,7 +43,7 @@ module.exports = (client) => {
       switch (name) {
         case "Battle Master":
           if (
-            extra.enemies.every((enemy) => enemy.profile.copy.hitPoints == 0)
+            extra.enemies.every((enemy) => enemy.profile.copy.hitpoints == 0)
           ) {
             await UpdateAchievement(achievement, 1);
           }

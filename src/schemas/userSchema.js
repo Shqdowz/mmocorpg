@@ -17,7 +17,7 @@ const userSchema = new Schema({
   requiredExperience: { type: Number, default: 20 },
   statPoints: { type: Number, default: 0 },
 
-  hitPoints: { type: Number, default: 100, min: 0, max: 500 },
+  hitpoints: { type: Number, default: 100, min: 0, max: 500 },
   speed: { type: Number, default: 1.0, min: 0.33, max: 5.0 },
 
   isBusy: { type: Boolean, default: false },

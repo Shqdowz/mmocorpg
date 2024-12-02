@@ -181,7 +181,7 @@ module.exports = {
 
     if (interaction.options.getSubcommand() == "monster") {
       const name = interaction.options.getString("name");
-      const hitPoints = interaction.options.getInteger("hitpoints");
+      const hitpoints = interaction.options.getInteger("hitpoints");
       const speed = interaction.options.getNumber("speed");
       let skills = interaction.options.getString("skills");
       let drop = interaction.options.getString("drop");
@@ -225,7 +225,7 @@ module.exports = {
       const monster = new Monster({
         name,
         tier,
-        hitPoints,
+        hitpoints,
         speed,
         thresholds: {},
         skills,
@@ -243,7 +243,7 @@ module.exports = {
           },
           {
             name: `HP`,
-            value: hitPoints.toString(),
+            value: hitpoints.toString(),
           },
           {
             name: `SPD`,

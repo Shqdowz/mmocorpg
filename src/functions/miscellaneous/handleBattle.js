@@ -79,7 +79,7 @@ module.exports = (client) => {
 
     function AffectedText(player) {
       const deadEmoji =
-        player.hitPoints == 0
+        player.hitpoints == 0
           ? player.user
             ? client.getEmoji("player_dead") + " "
             : client.getEmoji("monster_dead") + " "
@@ -93,7 +93,7 @@ module.exports = (client) => {
         .map((player) => {
           return `\`[${player.level}]\` ${player.name}: ${client.getEmoji(
             "health"
-          )} **${player.hitPoints}** / **${player.maxHitPoints}**`;
+          )} **${player.hitpoints}** / **${player.maxHitpoints}**`;
         })
         .join("\n");
     }
@@ -160,12 +160,12 @@ module.exports = (client) => {
         group: group,
 
         level: profile.level,
-        hitPoints: profile.hitPoints,
+        hitpoints: profile.hitpoints,
         speed: profile.speed,
         interval: FixedFloat(1 / profile.speed),
         next: FixedFloat(1 / profile.speed),
 
-        maxHitPoints: profile.hitPoints,
+        maxHitpoints: profile.hitpoints,
         baseSpeed: profile.speed,
 
         gear: {
@@ -234,7 +234,7 @@ module.exports = (client) => {
         }
       }
 
-      function CreateMonster(level, hitPoints) {
+      function CreateMonster(level, hitpoints) {
         const monsterSpeed = FixedFloat(
           profile.speed * ScaleByLevel(level, 0.005)
         );
@@ -247,12 +247,12 @@ module.exports = (client) => {
           group: group,
 
           level: level,
-          hitPoints: hitPoints,
+          hitpoints: hitpoints,
           speed: monsterSpeed,
           interval: FixedFloat(1 / monsterSpeed),
           next: time + FixedFloat(1 / monsterSpeed),
 
-          maxHitPoints: hitPoints,
+          maxHitpoints: hitpoints,
           baseSpeed: monsterSpeed,
 
           skills: profile.skills,
@@ -276,9 +276,9 @@ module.exports = (client) => {
       if (from) {
         if (profile.name == "Lil Grunt" && from.name == "Lil Grunt") {
           const level = from.level;
-          const hitPoints = from.hitPoints;
+          const hitpoints = from.hitpoints;
 
-          const monster = CreateMonster(level, hitPoints);
+          const monster = CreateMonster(level, hitpoints);
 
           PushToPlayers(monster, group);
           return;
@@ -298,11 +298,11 @@ module.exports = (client) => {
           const [gear, type] = gearTypeMap[name];
 
           const level = Math.max(1, 10 * from.gear[type].list[gear] - 10);
-          const hitPoints = Math.round(
-            profile.hitPoints * ScaleByLevel(from.gear[type].list[gear], 0.2)
+          const hitpoints = Math.round(
+            profile.hitpoints * ScaleByLevel(from.gear[type].list[gear], 0.2)
           );
 
-          const monster = CreateMonster(level, hitPoints);
+          const monster = CreateMonster(level, hitpoints);
 
           monster.thresholds.ownerId = from.id;
 
@@ -314,11 +314,11 @@ module.exports = (client) => {
           1,
           Math.floor(Math.random() * 5) + (averageLevel - 4)
         );
-        const hitPoints = Math.round(
-          profile.hitPoints * ScaleByLevel(level, 0.04)
+        const hitpoints = Math.round(
+          profile.hitpoints * ScaleByLevel(level, 0.04)
         );
 
-        const monster = CreateMonster(level, hitPoints);
+        const monster = CreateMonster(level, hitpoints);
 
         PushToPlayers(monster, group);
         return;
@@ -327,11 +327,11 @@ module.exports = (client) => {
           1,
           Math.floor(Math.random() * 5) + (averageLevel - 4)
         );
-        const hitPoints = Math.round(
-          profile.hitPoints * ScaleByLevel(level, 0.04)
+        const hitpoints = Math.round(
+          profile.hitpoints * ScaleByLevel(level, 0.04)
         );
 
-        const monster = CreateMonster(level, hitPoints);
+        const monster = CreateMonster(level, hitpoints);
 
         PushToPlayers(monster, group);
         return;
@@ -516,7 +516,7 @@ module.exports = (client) => {
         // Change skill chance if necessary
         switch (player.name) {
           case "Berserker":
-            if (player.hitPoints <= FixedFloat(player.maxHitPoints * 0.25)) {
+            if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.25)) {
               ChangeChance([
                 ["Axe Spin", 25],
                 ["Punch", 50],
@@ -576,7 +576,7 @@ module.exports = (client) => {
             }
             break;
           case "Heavy Spitter":
-            if (player.hitPoints <= FixedFloat(player.maxHitPoints * 0.5)) {
+            if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 33],
                 ["Spit", 67],
@@ -631,7 +631,7 @@ module.exports = (client) => {
             }
             break;
           case "Lil Grenadier":
-            if (player.hitPoints <= FixedFloat(player.maxHitPoints * 0.5)) {
+            if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 33],
                 ["Grenade Throw", 67],
@@ -647,7 +647,7 @@ module.exports = (client) => {
             }
             break;
           case "Lil Spitter":
-            if (player.hitPoints <= FixedFloat(player.maxHitPoints * 0.5)) {
+            if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
               ChangeChance([
                 ["Retreat", 50],
                 ["Spit", 50],
@@ -868,7 +868,7 @@ module.exports = (client) => {
           case "Damage":
             EffectValue = Math.round(EffectValue * GetIncRed(player, target));
             realDamage = EffectValue;
-            EffectValue = Math.min(target.hitPoints, EffectValue);
+            EffectValue = Math.min(target.hitpoints, EffectValue);
             dealtDamage = EffectValue;
 
             if (gearArray.active.includes(effect.from))
@@ -887,7 +887,7 @@ module.exports = (client) => {
             target.thresholds["Wolf Stick"] += EffectValue;
 
             // Chicken Stick
-            if (EffectValue == target.hitPoints) {
+            if (EffectValue == target.hitpoints) {
               player.stats["Kills Made"] += 1;
               player.thresholds["Chicken Stick"] += 1;
               if (gearArray.active.includes(effect.from))
@@ -908,7 +908,7 @@ module.exports = (client) => {
               if (!hitEnemies.includes(target.id)) hitEnemies.push(target.id);
 
               // Monster Slugger
-              if (target.hitPoints >= Math.round(target.maxHitPoints * 0.33))
+              if (target.hitpoints >= Math.round(target.maxHitpoints * 0.33))
                 player.thresholds["Monster Slugger"] += 1;
 
               // Spinsickle
@@ -945,11 +945,11 @@ module.exports = (client) => {
               target.thresholds.hit = true;
             }
 
-            target.hitPoints -= EffectValue;
+            target.hitpoints -= EffectValue;
             break;
           case "Healing":
             EffectValue = Math.min(
-              target.maxHitPoints - target.hitPoints,
+              target.maxHitpoints - target.hitpoints,
               EffectValue
             );
             doneHealing = EffectValue;
@@ -967,7 +967,7 @@ module.exports = (client) => {
             // Medicine Ball
             player.thresholds["Medicine Ball"] += EffectValue;
 
-            target.hitPoints += EffectValue;
+            target.hitpoints += EffectValue;
             break;
           case "Speed":
             target.speed = Math.max(
@@ -1029,9 +1029,9 @@ module.exports = (client) => {
       }
 
       function FilterDeadPlayers() {
-        players = players.filter((player) => player.hitPoints > 0);
-        allies = allies.filter((ally) => ally.hitPoints > 0);
-        enemies = enemies.filter((enemy) => enemy.hitPoints > 0);
+        players = players.filter((player) => player.hitpoints > 0);
+        allies = allies.filter((ally) => ally.hitpoints > 0);
+        enemies = enemies.filter((enemy) => enemy.hitpoints > 0);
       }
 
       // -=+=- Handle active gear -=+=-
@@ -2150,7 +2150,7 @@ module.exports = (client) => {
             break;
           case "Stumble": // scavenger
             staticDamage = Math.round(
-              Math.ceil(0.25 * player.maxHitPoints) * (overtime ? 2 : 1)
+              Math.ceil(0.25 * player.maxHitpoints) * (overtime ? 2 : 1)
             );
             await AddEffect(player, player, "Damage", active, staticDamage, 1);
 
@@ -2680,7 +2680,7 @@ module.exports = (client) => {
             player.thresholds["Monster Slugger"] -= 12;
 
             for (const victim of opponents) {
-              if (victim.hitPoints >= Math.round(victim.maxHitPoints * 0.33)) {
+              if (victim.hitpoints >= Math.round(victim.maxHitpoints * 0.33)) {
                 stun = await CalculateEffect(
                   [1],
                   ScaleByLevel(player.gear.weapon.list[weapon], 0.05)
@@ -2922,7 +2922,7 @@ module.exports = (client) => {
             )) {
               const threshold = player.thresholds[hp_x];
 
-              if (player.hitPoints < threshold * player.maxHitPoints) {
+              if (player.hitpoints < threshold * player.maxHitpoints) {
                 player.thresholds[hp_x] = -1;
 
                 let eggs = 0;
@@ -2945,7 +2945,7 @@ module.exports = (client) => {
           case "Berserker":
             const threshold = player.thresholds.hp_1;
 
-            if (player.hitPoints < threshold * player.maxHitPoints) {
+            if (player.hitpoints < threshold * player.maxHitpoints) {
               player.thresholds.hp_1 = -1;
 
               damageIncrease =
@@ -2999,7 +2999,7 @@ module.exports = (client) => {
             )) {
               const threshold = player.thresholds[hp_x];
 
-              if (player.hitPoints < threshold * player.maxHitPoints) {
+              if (player.hitpoints < threshold * player.maxHitpoints) {
                 player.thresholds[hp_x] = -1;
 
                 let spawned = [];
@@ -3032,7 +3032,7 @@ module.exports = (client) => {
             }
             break;
           case "Boomer":
-            if (player.hitPoints == player.thresholds.hp_1) {
+            if (player.hitpoints == player.thresholds.hp_1) {
               player.thresholds.hp_1 = -1;
 
               staticDamage = await CalculateEffect(
@@ -3180,7 +3180,7 @@ module.exports = (client) => {
       }
 
       for (const enemy of allEnemies) {
-        if (enemy.hitPoints == 0 && enemy.name != "Scorcher Egg") {
+        if (enemy.hitpoints == 0 && enemy.name != "Scorcher Egg") {
           const emoji = client.getEmoji(enemy.drop.name);
           const levelMultiplier = 0.98 + 0.02 * enemy.level;
 
@@ -3279,7 +3279,7 @@ module.exports = (client) => {
           value: MapPlayers(
             allAllies
               .sort((a, b) => {
-                return b.hitPoints - a.hitPoints;
+                return b.hitpoints - a.hitpoints;
               })
               .slice(0, 6)
           ),
@@ -3289,7 +3289,7 @@ module.exports = (client) => {
           value: MapPlayers(
             allEnemies
               .sort((a, b) => {
-                return b.hitPoints - a.hitPoints;
+                return b.hitpoints - a.hitpoints;
               })
               .slice(0, 6)
           ),

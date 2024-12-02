@@ -40,7 +40,7 @@ module.exports = {
           {
             name: "Stats",
             value: `${client.getEmoji("health")} HP: **${
-              userProfile.hitPoints
+              userProfile.hitpoints
             }**\n${client.getEmoji("speed")} SPD: **${userProfile.speed.toFixed(
               2
             )}**`,
@@ -74,7 +74,7 @@ module.exports = {
           .setLabel(`+6 HP`)
           .setEmoji(client.getEmoji("health"))
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(userProfile.hitPoints == 300);
+          .setDisabled(userProfile.hitpoints == 300);
         const speed = new ButtonBuilder()
           .setCustomId(`speed:${interaction.id}`)
           .setLabel(`+0.06 SPD`)
@@ -104,7 +104,7 @@ module.exports = {
 
       switch (i.customId) {
         case `hitpoints:${interaction.id}`:
-          userProfile.hitPoints += 6;
+          userProfile.hitpoints += 6;
           userProfile.statPoints -= 1;
           await userProfile.save();
           break;
@@ -129,7 +129,7 @@ module.exports = {
     });
 
     collector.on("end", async () => {
-      if (reply.components.length) {
+      if (reply.components) {
         await interaction.editReply({
           embeds: [await GenerateEmbed()],
           components: [],

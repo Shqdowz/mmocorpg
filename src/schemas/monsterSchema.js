@@ -7,7 +7,7 @@ const monsterSchema = new Schema(
     tier: String,
 
     level: { type: Number, default: 1 },
-    hitPoints: Number,
+    hitpoints: Number,
     speed: Number,
 
     thresholds: Object,
