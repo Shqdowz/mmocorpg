@@ -8,9 +8,9 @@ const achievementSchema = new Schema({
 
   "Battle Master": {
     description: { type: String, default: "Win battles" },
-    tier: { type: Number, default: 1 },
+    tier: { type: [Number], default: [1, 2, 3, 4, 5] },
     progress: { type: Number, default: 0 },
-    goal: { type: Number, default: 100 },
+    goal: { type: [Number], default: [100, 200, 400, 800, 1600] },
     commands: ["battle"],
   },
 });
