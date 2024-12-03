@@ -1,6 +1,9 @@
 // -=+=- Dependencies -=+=-
 const { EmbedBuilder } = require("discord.js");
 
+// -=+=- Utility -=+=-
+const wait = require("node:timers/promises").setTimeout;
+
 module.exports = (client) => {
   client.alwaysHandle = async (interaction, authorProfile) => {
     authorProfile = await client.fetchProfile(authorProfile.userId);
@@ -81,6 +84,8 @@ module.exports = (client) => {
         content: `${interaction.user}`,
         embeds: [embed],
       });
+
+      await wait(1 * 1000);
     }
 
     await HandleLevelUp();
