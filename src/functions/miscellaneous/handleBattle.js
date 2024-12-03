@@ -164,6 +164,7 @@ module.exports = (client) => {
         speed: profile.speed,
         interval: FixedFloat(1 / profile.speed),
         next: FixedFloat(1 / profile.speed),
+        weight: 1.0,
 
         maxHitpoints: profile.hitpoints,
         baseSpeed: profile.speed,
@@ -251,6 +252,7 @@ module.exports = (client) => {
           speed: monsterSpeed,
           interval: FixedFloat(1 / monsterSpeed),
           next: time + FixedFloat(1 / monsterSpeed),
+          weight: 1.0,
 
           maxHitpoints: hitpoints,
           baseSpeed: monsterSpeed,
@@ -335,6 +337,22 @@ module.exports = (client) => {
 
         PushToPlayers(monster, group);
         return;
+      }
+    }
+
+    function SelectVictim(players) {
+      const totalWeight = players.reduce(
+        (total, player) => total + player.weight,
+        0
+      );
+      const random = Math.random() * totalWeight;
+
+      let cumulativeWeight = 0;
+      for (const player of players) {
+        cumulativeWeight += player.weight;
+        if (random < cumulativeWeight) {
+          return player;
+        }
       }
     }
 
@@ -610,11 +628,32 @@ module.exports = (client) => {
           case "Knight":
             if (
               player.activeEffects.filter((effect) => effect.from == "Decoy")
+                .length &&
+              player.activeEffects.filter((effect) => effect.from == "Taunt")
                 .length
             ) {
               ChangeChance([
                 ["Decoy", 0],
                 ["Slash", 100],
+                ["Taunt", 0],
+              ]);
+            } else if (
+              player.activeEffects.filter((effect) => effect.from == "Taunt")
+                .length
+            ) {
+              ChangeChance([
+                ["Decoy", 67],
+                ["Slash", 33],
+                ["Taunt", 0],
+              ]);
+            } else if (
+              player.activeEffects.filter((effect) => effect.from == "Decoy")
+                .length
+            ) {
+              ChangeChance([
+                ["Decoy", 0],
+                ["Slash", 50],
+                ["Taunt", 50],
               ]);
             }
             break;
@@ -762,6 +801,7 @@ module.exports = (client) => {
       let stun = 0;
       let damageReduction = 1;
       let damageIncrease = 1;
+      let weight = 0;
 
       let chance;
       let duration;
@@ -853,12 +893,10 @@ module.exports = (client) => {
             return;
         }
 
-        if (effect.type == "Speed") {
-          target.activeEffects.forEach((effect) => {
-            if (effect.type == "Speed") {
-              EffectValue += effect.value;
-            }
-          });
+        if (effect.type == "Speed" || effect.type == "Weight") {
+          EffectValue = target.activeEffects
+            .filter((e) => e.type == effect.type)
+            .reduce((total, e) => total + e.value, 0);
         } else {
           EffectValue = effect.value;
         }
@@ -988,6 +1026,9 @@ module.exports = (client) => {
               target.next + EffectValue * target.interval
             );
             break;
+          case "Weight":
+            target.weight = FixedFloat(1 + EffectValue);
+            break;
         }
 
         // Decrease duration
@@ -1002,6 +1043,10 @@ module.exports = (client) => {
           if (effect.type == "Speed") {
             target.speed = FixedFloat(target.speed - effect.value);
             target.interval = FixedFloat(1 / target.speed);
+          }
+
+          if (effect.type == "Weight") {
+            target.weight = FixedFloat(target.weight / (1 + effect.value));
           }
         }
       }
@@ -1122,7 +1167,7 @@ module.exports = (client) => {
             }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Monster Taser":
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             staticDamage = await CalculateEffect(
               [28, 32],
@@ -1367,7 +1412,7 @@ module.exports = (client) => {
             }
             break;
           case "Axe Throw": // berserker
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             player.activeEffects.filter(
               (effect) => (effect.from = "Threshold:hp_1")
@@ -1463,7 +1508,7 @@ module.exports = (client) => {
               .join("\n")}`;
             break;
           case "Charge": // charger
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             const chargeStacks = player.thresholds.chargeStacks;
             player.thresholds.chargeStacks = 0;
@@ -1736,7 +1781,7 @@ module.exports = (client) => {
             break;
           case "Fireball Juggling": // juggler
             for (let i = 0; i < 5; i++) {
-              victim = opponents[Math.floor(Math.random() * opponents.length)];
+              victim = SelectVictim(opponents);
 
               staticDamage = await CalculateEffect(
                 [6, 6],
@@ -1864,7 +1909,7 @@ module.exports = (client) => {
             }
             break;
           case "Headbutt": // boomer, shelldon
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             switch (player.name) {
               case "Boomer":
@@ -1944,7 +1989,7 @@ module.exports = (client) => {
             }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Life Steal": // toxic sapling
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             staticDamage = await CalculateEffect(
               [7, 11],
@@ -1978,7 +2023,7 @@ module.exports = (client) => {
             }**!\n${affected.map((a) => a[0] + a[1]).join("\n")}`;
             break;
           case "Punch": // berserker
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             staticDamage = await CalculateEffect(
               [18, 22],
@@ -2035,7 +2080,7 @@ module.exports = (client) => {
             break;
           case "Scratch": // scorcher, wolf
           case "Slash": // lil beetle, slasher, knight, lil grunt
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             const scratchSlashDamageMap = {
               Knight: [3, 7],
@@ -2071,7 +2116,7 @@ module.exports = (client) => {
             activeReply = `**${player.name}** used **${active}**! It spawned **1 Lil Grunt**.`;
             break;
           case "Sharp Claw": // big papa
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             for (let i = 0; i < 2; i++) {
               staticDamage += await CalculateEffect(
@@ -2091,7 +2136,7 @@ module.exports = (client) => {
             }**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Spit": // lil spitter, heavy spitter
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             switch (player.name) {
               case "Lil Spitter":
@@ -2131,7 +2176,7 @@ module.exports = (client) => {
             }**!\n${affected.map((a) => a[0] + a[1] + a[2])}`;
             break;
           case "Strong Chop": // bone smasher
-            victim = opponents[Math.floor(Math.random() * opponents.length)];
+            victim = SelectVictim(opponents);
 
             staticDamage = await CalculateEffect(
               [20, 20],
@@ -2229,6 +2274,22 @@ module.exports = (client) => {
             }** used **${active}** on **all opponents**!\n${affected
               .map((a) => a[0] + a[1] + a[2])
               .join("\n")}`;
+            break;
+          case "Taunt":
+            weight = await CalculateEffect(
+              [0.25],
+              ScaleByLevel(player.level, 0.01)
+            );
+            await AddEffect(player, player, "Weight", active, weight, 2);
+
+            affected.push([
+              AffectedText(player),
+              ` **+${Math.round(weight * 100)}%** 🎯 (2)`,
+            ]);
+
+            activeReply = `**${
+              player.name
+            }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
             break;
           case "Teleport": // juggler
             damageIncrease =
@@ -2532,7 +2593,7 @@ module.exports = (client) => {
               }
               break;
             case "Zap in a Box":
-              victim = opponents[Math.floor(Math.random() * opponents.length)];
+              victim = SelectVictim(opponents);
 
               staticDamage = await CalculateEffect(
                 [6, 10],
