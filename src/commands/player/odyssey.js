@@ -13,27 +13,23 @@ module.exports = {
       return authorProfile.level >= requiredLevel ? "🟢" : "🔴";
     }
 
-    function CalculateTotalProgress(level) {
+    function CalculateProgress(level, requiredExperience) {
       let totalExperience = authorProfile.experience;
       while (level > 0) {
         totalExperience += level * 20;
         level--;
       }
-      return totalExperience;
+      return ((totalExperience / requiredExperience) * 100).toFixed(1);
     }
 
     const embed = new EmbedBuilder()
       .setTitle(`${authorProfile.username}'s Portal Odyssey`)
       .setDescription(
-        `**${parseFloat(
-          (
-            (authorProfile.experience / authorProfile.requiredExperience) *
-            100
-          ).toFixed(1)
-        )}%** to \`[${authorProfile.level + 1}]\`\n**${parseFloat(
-          ((CalculateTotalProgress(authorProfile.level) / 99000) * 100).toFixed(
-            1
-          )
+        `**${CalculateProgress(0, authorProfile.requiredExperience)}%** to \`[${
+          authorProfile.level + 1
+        }]\`\n**${CalculateProgress(
+          authorProfile.level,
+          99000
         )}%** to \`[100]\``
       )
       .setColor(client.getColor("level", authorProfile));
