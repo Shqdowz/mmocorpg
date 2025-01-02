@@ -159,7 +159,7 @@ module.exports = (client) => {
 
       const player = {
         id: playerId,
-        index: players.length,
+        index: null,
         name: profile.username,
         user: user,
         group: group,
@@ -247,7 +247,7 @@ module.exports = (client) => {
 
         return {
           id: playerId,
-          index: players.length,
+          index: null,
           name: profile.name,
           user: null,
           group: group,
@@ -256,7 +256,7 @@ module.exports = (client) => {
           hitpoints: hitpoints,
           speed: monsterSpeed,
           interval: FixedFloat(1 / monsterSpeed),
-          next: time + FixedFloat(1 / monsterSpeed),
+          next: FixedFloat(1 / monsterSpeed + time),
           weight: 1.0,
 
           maxHitpoints: maxHitpoints || hitpoints,
@@ -467,7 +467,7 @@ module.exports = (client) => {
           },
         ])
         .setFooter({
-          text: `Turn: ${turn} | Wave: ${currentWave} / ${maxWave} | Overtime: ${currentTime.toFixed(
+          text: `Turn: ${turn}\nWave: ${currentWave} / ${maxWave}\nOvertime: ${currentTime.toFixed(
             2
           )} / ${maxTime.toFixed(2)}`,
         })
@@ -537,11 +537,8 @@ module.exports = (client) => {
 
       // -=+=- Determine move -=+=-
       if (!player.user) {
-        function ChangeChance(skillChances) {
-          for (const skillChance of skillChances) {
-            skills.find((skill) => skill[0] == skillChance[0])[1] =
-              skillChance[1];
-          }
+        function ChangeSkillChance(name, chance) {
+          skills.find((skill) => skill[0] == name)[1] = chance;
         }
 
         const skills = player.skills.map((skill) => [...skill]);
@@ -550,11 +547,7 @@ module.exports = (client) => {
         switch (player.name) {
           case "Berserker":
             if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.25)) {
-              ChangeChance([
-                ["Axe Spin", 25],
-                ["Punch", 50],
-                ["Axe Throw", 25],
-              ]);
+              ChangeSkillChance("Axe Spin", 1);
             }
             break;
           case "Big Papa":
@@ -562,11 +555,7 @@ module.exports = (client) => {
               player.activeEffects.filter((effect) => effect.from == "Dash")
                 .length
             ) {
-              ChangeChance([
-                ["Dash", 0],
-                ["Sharp Claw", 67],
-                ["Flame Breath", 33],
-              ]);
+              ChangeSkillChance("Dash", 0);
             }
             break;
           case "Bone Smasher":
@@ -574,25 +563,14 @@ module.exports = (client) => {
               player.activeEffects.filter((effect) => effect.from == "Dash")
                 .length
             ) {
-              ChangeChance([
-                ["Dash", 0],
-                ["Strong Chop", 34],
-                ["Body Slam", 33],
-                ["Fire Vortex", 33],
-              ]);
+              ChangeSkillChance("Dash", 0);
             }
             break;
           case "Charger":
             if (player.thresholds.chargeStacks == 0) {
-              ChangeChance([
-                ["Charge", 0],
-                ["Charge Up", 100],
-              ]);
+              ChangeSkillChance("Charge", 0);
             } else if (player.thresholds.chargeStacks == 5) {
-              ChangeChance([
-                ["Charge Up", 0],
-                ["Charge", 100],
-              ]);
+              ChangeSkillChance("Charge Up", 0);
             }
             break;
           case "Executioner":
@@ -601,19 +579,13 @@ module.exports = (client) => {
                 (effect) => effect.from == "Jump Away"
               ).length
             ) {
-              ChangeChance([
-                ["Jump Away", 0],
-                ["Axe Slash", 67],
-                ["Energy Blast", 33],
-              ]);
+              ChangeSkillChance("Jump Away", 0);
             }
             break;
           case "Heavy Spitter":
             if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
-              ChangeChance([
-                ["Retreat", 33],
-                ["Spit", 67],
-              ]);
+              ChangeSkillChance("Retreat", 1);
+              ChangeSkillChance("Spit", 2);
             }
             break;
           case "Juggler":
@@ -621,11 +593,7 @@ module.exports = (client) => {
               player.activeEffects.filter((effect) => effect.from == "Teleport")
                 .length
             ) {
-              ChangeChance([
-                ["Teleport", 0],
-                ["Fire Breath", 67],
-                ["Fireball Juggling", 33],
-              ]);
+              ChangeSkillChance("Teleport", 0);
             }
             break;
           case "Jumper":
@@ -634,43 +602,24 @@ module.exports = (client) => {
                 (effect) => effect.from == "Jump Away"
               ).length
             ) {
-              ChangeChance([
-                ["Jump Away", 0],
-                ["Triple Stab", 100],
-              ]);
+              ChangeSkillChance("Jump Away", 0);
             }
             break;
           case "Knight":
             if (
               player.activeEffects.filter((effect) => effect.from == "Decoy")
-                .length &&
-              player.activeEffects.filter((effect) => effect.from == "Taunt")
                 .length
             ) {
-              ChangeChance([
-                ["Decoy", 0],
-                ["Slash", 100],
-                ["Taunt", 0],
-              ]);
-            } else if (
-              player.activeEffects.filter((effect) => effect.from == "Taunt")
-                .length
-            ) {
-              ChangeChance([
-                ["Decoy", 67],
-                ["Slash", 33],
-                ["Taunt", 0],
-              ]);
-            } else if (
-              player.activeEffects.filter((effect) => effect.from == "Decoy")
-                .length
-            ) {
-              ChangeChance([
-                ["Decoy", 0],
-                ["Slash", 50],
-                ["Taunt", 50],
-              ]);
+              ChangeSkillChance("Decoy", 0);
             }
+
+            if (
+              player.activeEffects.filter((effect) => effect.from == "Taunt")
+                .length
+            ) {
+              ChangeSkillChance("Taunt", 0);
+            }
+
             break;
           case "Lil Beetle":
             if (
@@ -678,54 +627,43 @@ module.exports = (client) => {
                 (effect) => effect.from == "Swordplay"
               ).length
             ) {
-              ChangeChance([
-                ["Swordplay", 0],
-                ["Slash", 100],
-              ]);
+              ChangeSkillChance("Swordplay", 0);
             }
             break;
           case "Lil Grenadier":
             if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
-              ChangeChance([
-                ["Retreat", 33],
-                ["Grenade Throw", 67],
-              ]);
+              ChangeSkillChance("Retreat", 1);
+              ChangeSkillChance("Grenade Throw", 2);
             }
             break;
           case "Lil Grunt":
             if (enemies.length >= 6 || player.thresholds.screamed) {
-              ChangeChance([
-                ["Scream", 0],
-                ["Slash", 100],
-              ]);
+              ChangeSkillChance("Scream", 0);
             }
             break;
           case "Lil Spitter":
             if (player.hitpoints <= FixedFloat(player.maxHitpoints * 0.5)) {
-              ChangeChance([
-                ["Retreat", 50],
-                ["Spit", 50],
-              ]);
+              ChangeSkillChance("Retreat", 1);
             }
             break;
           case "Toxic Sapling":
             if (player.thresholds.growStacks == 5) {
-              ChangeChance([
-                ["Grow", 0],
-                ["Life Steal", 100],
-              ]);
+              ChangeSkillChance("Grow", 0);
             }
             break;
         }
 
-        const rng = Math.ceil(Math.random() * 100);
-        let total = 0;
+        const totalWeight = skills.reduce(
+          (total, skill) => total + skill[1],
+          0
+        );
+        const random = Math.random() * totalWeight;
 
-        for (let i = 0; i < skills.length; i++) {
-          total += skills[i][1];
-
-          if (rng <= total) {
-            active = skills[i][0];
+        let cumulativeWeight = 0;
+        for (const skill of skills) {
+          cumulativeWeight += skill[1];
+          if (random < cumulativeWeight) {
+            active = skill[0];
             break;
           }
         }
@@ -895,9 +833,9 @@ module.exports = (client) => {
           target.activeEffects = target.activeEffects.filter(
             (effect) =>
               !(
-                (effect.type === "Damage" && effect.duration > 1) ||
-                (effect.type === "Speed" && effect.value < 0) ||
-                effect.type === "Stun"
+                (effect.type == "Damage" && effect.duration > 1) ||
+                (effect.type == "Speed" && effect.value < 0) ||
+                effect.type == "Stun"
               )
           );
 
@@ -1034,7 +972,7 @@ module.exports = (client) => {
             const newInterval = target.interval;
 
             if (effect.duration == 1 || player != target) {
-              target.next = target.next - oldInterval + newInterval;
+              target.next = FixedFloat(target.next - oldInterval + newInterval);
             }
             break;
           case "Stun":
@@ -1569,7 +1507,7 @@ module.exports = (client) => {
           case "Chase": // scorcher, boomer
             const range = Math.floor(players.length / 2) - 1;
             victim = players[Math.floor(Math.random() * range + 1)];
-            player.next = victim.next - player.interval;
+            player.next = FixedFloat(victim.next - player.interval);
 
             staticDamage = await CalculateEffect(
               [5, 10],
@@ -3192,26 +3130,17 @@ module.exports = (client) => {
       }
     }
 
+    // Initial queue
+    players.sort((a, b) => {
+      if (a.next == b.next) return a.id - b.id;
+      return a.next - b.next;
+    });
+    players.forEach((player, index) => {
+      player.index = index;
+    });
+
     // -=+=- Turn preparation -=+=-
     while (!gameEnded) {
-      // Sort queue
-      players.sort((a, b) => {
-        if (a.next == b.next) return a.index - b.index;
-        return a.next - b.next;
-      });
-
-      // 'Move' queue
-      players.forEach((player) => {
-        if (player.index == 0) {
-          player.index = players.length - 1;
-        } else {
-          player.index--;
-        }
-      });
-
-      const currentPlayer = players[0];
-      currentTime = currentPlayer.next;
-
       // Handle overtime
       if (!overtime && currentTime >= maxTime) {
         overtime = true;
@@ -3223,7 +3152,39 @@ module.exports = (client) => {
         }
       }
 
+      const playerCount = players.length;
+
+      const currentPlayer = players[0];
+      currentTime = currentPlayer.next;
+
       await HandleTurn(currentPlayer);
+
+      // 'Move' queue
+      players.forEach((player) => {
+        if (player.id == currentPlayer.id) {
+          player.index = players.length - 1;
+        } else {
+          player.index--;
+        }
+      });
+
+      // Sort queue
+      players.sort((a, b) => {
+        if (a.next == b.next) return a.index - b.index;
+        return a.next - b.next;
+      });
+
+      // Fix queue (due to death)
+      // this makes a 0 [1-death] 2 scenario become 0 1 instead of 1 1
+      if (playerCount > players.length) {
+        players.sort((a, b) => {
+          if (a.next == b.next) return a.index - b.index;
+          return a.next - b.next;
+        });
+        players.forEach((player, index) => {
+          player.index = index;
+        });
+      }
     }
 
     // -=+=- Loot drops -=+=-
@@ -3236,9 +3197,9 @@ module.exports = (client) => {
       if (enemies.length == 0) {
         let chance = 50;
         for (const enemy of allEnemies) {
-          if (enemy.tier == "Standard") chance -= 1;
-          if (enemy.tier == "Elite") chance -= 4;
-          if (enemy.tier == "Boss") chance -= 10;
+          if (enemy.tier == "standard") chance -= 1;
+          if (enemy.tier == "elite") chance -= 4;
+          if (enemy.tier == "boss") chance -= 10;
         }
         chance = Math.max(chance, 10);
 
@@ -3266,36 +3227,50 @@ module.exports = (client) => {
 
       for (const enemy of allEnemies) {
         if (enemy.hitpoints == 0 && enemy.name != "Scorcher Egg") {
-          const emoji = client.getEmoji(enemy.drop.name);
+          const emoji = client.getEmoji(enemy.drop);
           const levelMultiplier = 0.98 + 0.02 * enemy.level;
 
-          const dropAmount = enemy.drop.amount * levelMultiplier;
-          const totalDrops =
-            Math.floor(dropAmount) + (Math.random() < dropAmount % 1 ? 1 : 0);
+          const dropMap = {
+            standard: {
+              mocoins: [1 * levelMultiplier, 10 * levelMultiplier],
+              experience: [0 * levelMultiplier, 2 * levelMultiplier],
+              amount: 1.5 * levelMultiplier,
+            },
+            elite: {
+              mocoins: [10 * levelMultiplier, 30 * levelMultiplier],
+              experience: [2 * levelMultiplier, 6 * levelMultiplier],
+              amount: 0.7 * levelMultiplier,
+            },
+            boss: {
+              mocoins: [30 * levelMultiplier, 70 * levelMultiplier],
+              experience: [6 * levelMultiplier, 14 * levelMultiplier],
+              amount: 0.3 * levelMultiplier,
+            },
+          };
 
-          const [minMocoins, maxMocoins] = enemy.drop.mocoins;
+          const dropData = dropMap[enemy.tier];
+
           mocoins += Math.round(
-            (Math.random() * (maxMocoins - minMocoins) + minMocoins) *
-              levelMultiplier
+            Math.random() * (dropData.mocoins[1] - dropData.mocoins[0]) +
+              dropData.mocoins[0]
           );
-
-          const [minExperience, maxExperience] = enemy.drop.experience;
           experience += Math.round(
-            (Math.random() * (maxExperience - minExperience) + minExperience) *
-              levelMultiplier
+            Math.random() * (dropData.experience[1] - dropData.experience[0]) +
+              dropData.experience[0]
           );
+          const amount =
+            Math.floor(dropData.amount) +
+            (Math.random() < dropData.amount % 1 ? 1 : 0);
 
-          if (totalDrops > 0) {
-            const existingItem = loot.find(
-              (item) => item.name === enemy.drop.name
-            );
+          if (amount > 0) {
+            const existingItem = loot.find((item) => item.name == enemy.drop);
 
             if (existingItem) {
-              existingItem.amount += totalDrops;
+              existingItem.amount += amount;
             } else {
               loot.push({
-                name: enemy.drop.name,
-                amount: totalDrops,
+                name: enemy.drop,
+                amount: amount,
                 emoji: emoji,
               });
             }
@@ -3353,6 +3328,45 @@ module.exports = (client) => {
         await thread.send({ content: `${ally.user}`, embeds: [embed] });
       }
     }
+
+    // Stats
+    const statistics = new ButtonBuilder()
+      .setCustomId(`statistics:${interaction.id}`)
+      .setEmoji("📊")
+      .setStyle(ButtonStyle.Secondary);
+
+    const statisticsReply = await thread.send({
+      content: `View your stats below!`,
+      components: [new ActionRowBuilder().addComponents(statistics)],
+    });
+
+    const collector = statisticsReply.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      filter: (i) => i.customId.endsWith(interaction.id),
+      time: 60 * 1000,
+    });
+
+    collector.on("collect", async (i) => {
+      if (i.customId == `statistics:${interaction.id}`) {
+        const statisticsEmbed = new EmbedBuilder()
+          .setTitle(`${i.user.username}'s statistics`)
+          .setDescription(
+            `${Object.entries(
+              allPlayers.find((p) => p.name == i.user.username).stats
+            )
+              .map(([key, value]) => `${key}: **${value}**`)
+              .join("\n")}`
+          )
+          .setFooter({ text: `Requested by ${i.user.username}` })
+          .setTimestamp()
+          .setColor("Aqua");
+
+        await i.reply({
+          embeds: [statisticsEmbed],
+          ephemeral: true,
+        });
+      }
+    });
 
     // -=+=- Post-battle -=+=-
     const winnerEmbed = new EmbedBuilder()
