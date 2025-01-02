@@ -112,7 +112,6 @@ module.exports = (client) => {
           "Lil Grenadier",
           "Lil Grunt",
           "Lil Spitter",
-          // "Scorcher Egg", not for spawning
           "Boomer",
           "Charger",
           "Heavy Spitter",
@@ -120,16 +119,18 @@ module.exports = (client) => {
           "Knight",
           "Scavenger",
           "Scorcher",
+          // "Scorcher Egg", not for spawning
           "Slasher",
           "Toxic Sapling",
+          "Alarm Bell",
+          "Big Papa",
+          "Executioner",
+          "Berserker",
+          "Bone Smasher",
+          "Juggler",
+          "Overlord",
         ],
-        standard: [
-          "Lil Beetle",
-          "Lil Grenadier",
-          "Lil Grunt",
-          "Lil Spitter",
-          // "Scorcher Egg", not for spawning
-        ],
+        standard: ["Lil Beetle", "Lil Grenadier", "Lil Grunt", "Lil Spitter"],
         elite: [
           "Boomer",
           "Charger",
@@ -138,6 +139,7 @@ module.exports = (client) => {
           "Knight",
           "Scavenger",
           "Scorcher",
+          // "Scorcher Egg", not for spawning
           "Slasher",
           "Toxic Sapling",
         ],
