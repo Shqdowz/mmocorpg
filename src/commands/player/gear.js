@@ -167,7 +167,7 @@ module.exports = {
       const focusedOption = interaction.options.getFocused(true);
 
       let choices = [];
-      if (focusedOption.name === "weapon") {
+      if (focusedOption.name == "weapon") {
         choices = Object.keys(authorProfile.gear.weapon).filter(
           (gear) => authorProfile.gear.weapon[gear] > 0
         );

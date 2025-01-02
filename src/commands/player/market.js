@@ -98,7 +98,7 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle("Market (1/1)")
         .setDescription(`There's currently no ongoing sale :(`)
-        .addFields(
+        .addFields([
           {
             name: "Medicine",
             value: "80 mo.coins",
@@ -113,8 +113,8 @@ module.exports = {
             name: "Toy",
             value: "20 mo.coins",
             inline: true,
-          }
-        )
+          },
+        ])
         .setFooter({
           iconURL: interaction.user.displayAvatarURL(),
           text: `Requested by ${interaction.user.username}`,
