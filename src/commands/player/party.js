@@ -48,7 +48,7 @@ module.exports = {
     ),
 
   async execute(interaction, client) {
-    const authorProfile = await client.fetchProfile(interaction.user.id);
+    let authorProfile = await client.fetchProfile(interaction.user.id);
 
     const author = interaction.user;
 
@@ -157,13 +157,13 @@ module.exports = {
             break;
         }
 
+        await interaction.editReply({ embeds: [await GenerateEmbed()] });
         await i.reply({
           content: `You are now ${
             i.customId == `ready:${interaction.id}` ? `ready` : `unready`
           }!`,
           ephemeral: true,
         });
-        await interaction.editReply({ embeds: [await GenerateEmbed()] });
       });
 
       collector.on("end", async () => {
