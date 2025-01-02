@@ -118,6 +118,7 @@ module.exports = {
     // let page = 0;
 
     // collector.on("collect", async (i) => {
+    //   await i.deferUpdate(); // If no i.acknowledgement
     //   collector.resetTimer({ time: 30 * 1000 });
 
     //   switch (i.customId) {

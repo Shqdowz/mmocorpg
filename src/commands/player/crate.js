@@ -307,7 +307,7 @@ module.exports = {
       const reward = OpenCrate(size);
       const rewardText = await GrantReward(reward);
 
-      await interaction.editReply({
+      await i.update({
         embeds: [GenerateEmbed(reward, rewardText)],
         components: [
           new ActionRowBuilder().addComponents(...GenerateComponents()),
