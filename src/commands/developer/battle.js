@@ -7,30 +7,38 @@ module.exports = {
     .setDescription("Battle a random group of monsters"),
 
   async execute(interaction, client) {
+    function Random(standard, elite, boss) {
+      const rng = Math.random();
+      const tier =
+        rng < standard
+          ? "standard"
+          : rng < standard + elite
+          ? "elite"
+          : rng < standard + elite + boss
+          ? "boss"
+          : null;
+      const enemy =
+        monsterArray[tier][
+          Math.floor(Math.random() * monsterArray[tier].length)
+        ];
+
+      return enemy;
+    }
+
     // Global arrays
     const monsterArray = client.getArray("monsters");
 
-    // Enemies
     const authorProfile = await client.fetchProfile(interaction.user.id);
-
-    const startAllies = authorProfile.party
+    const allyCount = authorProfile.party
       ? authorProfile.party.members.length
       : 1;
 
-    const waves = 1;
-    const waveEnemies = Array.from({ length: waves }, () => []);
+    // Enemies
+    const waveEnemies = Array.from({ length: 1 }, () => []);
 
-    for (const wave of waveEnemies) {
-      for (let i = 0; i < startAllies * 2; i++) {
-        const rng = Math.random();
-        const tier = rng < 0.6 ? "standard" : rng < 0.9 ? "elite" : "boss";
-
-        const enemy =
-          monsterArray[tier][
-            Math.floor(Math.random() * monsterArray[tier].length)
-          ];
-        wave.push(enemy);
-      }
+    for (let i = 0; i < allyCount * 2; i++) {
+      waveEnemies[0].push(Random(0.6, 0.3, 0.1));
+      // waveEnemies[0].push("Scorcher");
     }
 
     // Handle battle
