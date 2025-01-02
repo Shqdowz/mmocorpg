@@ -55,7 +55,7 @@ module.exports = (client) => {
         case "One on One":
           if (
             extra.enemies.some(
-              (enemy) => enemy.tier == "Boss" && enemy.hitpoints == 0
+              (enemy) => enemy.tier == "boss" && enemy.hitpoints == 0
             )
           ) {
             await UpdateQuest(quest, 1);

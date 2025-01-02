@@ -99,9 +99,7 @@ module.exports = {
         .addStringOption((option) =>
           option
             .setName("drop")
-            .setDescription(
-              "The monster's drop & amount (seperated by a comma)"
-            )
+            .setDescription("The monster's drop")
             .setRequired(true)
         )
         .addStringOption((option) =>
@@ -184,43 +182,13 @@ module.exports = {
       const hitpoints = interaction.options.getInteger("hitpoints");
       const speed = interaction.options.getNumber("speed");
       let skills = interaction.options.getString("skills");
-      let drop = interaction.options.getString("drop");
+      const drop = interaction.options.getString("drop");
       const tier = interaction.options.getString("tier");
 
       skills = skills.split("|").map((skill) => {
         const [name, chance] = skill.split(",");
         return [name, parseInt(chance)];
       });
-
-      const rewardsMap = {
-        Standard: [
-          [1, 10],
-          [0, 2],
-        ],
-        Elite: [
-          [10, 30],
-          [2, 6],
-        ],
-        Boss: [
-          [30, 70],
-          [6, 14],
-        ],
-        Champion: [
-          [70, 150],
-          [14, 30],
-        ],
-      };
-
-      const coins = rewardsMap[tier][0];
-      const experience = rewardsMap[tier][1];
-
-      drop = drop.split(",");
-      const dropInfo = {
-        name: drop[0],
-        amount: parseFloat(drop[1]),
-        mocoins: coins,
-        experience: experience,
-      };
 
       const monster = new Monster({
         name,
@@ -229,7 +197,7 @@ module.exports = {
         speed,
         thresholds: {},
         skills,
-        drop: dropInfo,
+        drop,
       });
       await monster.save();
 
@@ -256,16 +224,8 @@ module.exports = {
               .join("\n"),
           },
           {
-            name: `Drop: Amount`,
-            value: `${drop[0]}: ${drop[1]}`,
-          },
-          {
-            name: `mo.coins & experience (min/max)`,
-            value: `${client.getEmoji("mocoin")} ${coins[0]}/${
-              coins[1]
-            }\n${client.getEmoji("experience")} ${experience[0]}/${
-              experience[1]
-            }`,
+            name: `Drop`,
+            value: drop.toString(),
           },
         ])
         .setTimestamp()

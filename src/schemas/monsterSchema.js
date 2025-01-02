@@ -14,13 +14,7 @@ const monsterSchema = new Schema(
 
     skills: [Array],
 
-    drop: {
-      name: String,
-      amount: Number,
-
-      mocoins: [Number],
-      experience: [Number],
-    },
+    drop: String,
   },
   { versionKey: false }
 );
