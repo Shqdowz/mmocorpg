@@ -22,7 +22,7 @@ module.exports = (client) => {
       });
     }
 
-    const { startEnemies } = settings;
+    let { waveEnemies } = settings;
 
     // -=+=- Global variables -=+=-
     const gearArray = client.getArray("gear");
@@ -37,8 +37,13 @@ module.exports = (client) => {
     let enemies = [];
     let allEnemies = [];
 
-    const maxTime = 10.0;
-    let currentTime = 0.0;
+    let turn = 1;
+
+    let currentWave = 0;
+    const maxWave = waveEnemies.length;
+
+    const maxTime = 10 * waveEnemies.length;
+    let currentTime = 0;
     let overtime = false;
     let gameEnded = false;
 
@@ -235,7 +240,7 @@ module.exports = (client) => {
         }
       }
 
-      function CreateMonster(level, hitpoints) {
+      function CreateMonster(level, hitpoints, maxHitpoints) {
         const monsterSpeed = FixedFloat(
           profile.speed * ScaleByLevel(level, 0.005)
         );
@@ -254,7 +259,7 @@ module.exports = (client) => {
           next: time + FixedFloat(1 / monsterSpeed),
           weight: 1.0,
 
-          maxHitpoints: hitpoints,
+          maxHitpoints: maxHitpoints || hitpoints,
           baseSpeed: monsterSpeed,
 
           skills: profile.skills,
@@ -277,10 +282,11 @@ module.exports = (client) => {
 
       if (from) {
         if (profile.name == "Lil Grunt" && from.name == "Lil Grunt") {
-          const level = from.level;
-          const hitpoints = from.hitpoints;
-
-          const monster = CreateMonster(level, hitpoints);
+          const monster = CreateMonster(
+            from.level,
+            from.hitpoints,
+            from.maxHitpoints
+          );
 
           PushToPlayers(monster, group);
           return;
@@ -356,6 +362,14 @@ module.exports = (client) => {
       }
     }
 
+    async function AdvanceWave() {
+      for (const enemy of waveEnemies[0]) {
+        await PushMonster(enemy, 2, currentTime, null);
+      }
+      currentWave++;
+      waveEnemies = waveEnemies.slice(1, waveEnemies.length);
+    }
+
     // -=+=- Ally team -=+=-
     const authorProfile = await client.fetchProfile(interaction.user.id);
 
@@ -404,9 +418,7 @@ module.exports = (client) => {
       allies.reduce((total, ally) => total + ally.level, 0) / allies.length
     );
 
-    for (const enemy of startEnemies) {
-      await PushMonster(enemy, 2, 0, null);
-    }
+    await AdvanceWave();
 
     // -=+=- Battle starting -=+=-
     const reply = await interaction.reply({
@@ -424,22 +436,20 @@ module.exports = (client) => {
 
     // -=+=- Main battle logic -=+=-
     async function HandleTurn(player) {
-      const next = Math.floor(
-        new Date(Date.now() + (overtime ? 7.5 * 1000 : 15 * 1000)).getTime() /
-          1000
+      const remainingTime = Math.floor(
+        new Date(
+          Date.now() +
+            (overtime ? 7.5 * 1000 : 15 * 1000) / (!player.user ? 3 : 1)
+        ).getTime() / 1000
       );
 
       const turnEmbed = new EmbedBuilder()
         .setTitle(
           `${overtime ? `⏰ ` : `\0`}\`[${player.level}]\` ${
             player.name
-          }'s turn!${
-            player.user ? ` (ends <t:${next}:R>)` : `\0`
-          } (**${currentTime.toFixed(2)}**)${overtime ? ` ⏰` : `\0`}`
+          }'s turn! (**${currentTime.toFixed(2)}**)${overtime ? ` ⏰` : `\0`}`
         )
-        .setDescription(
-          player.user ? `Choose a move!` : `Monster is choosing a move...`
-        )
+        .setDescription(`${`Turn ends <t:${remainingTime}:R>!`}`)
         .addFields([
           {
             name: "-=+=- Hunters -=+=-",
@@ -456,6 +466,11 @@ module.exports = (client) => {
             value: MapTurns(players),
           },
         ])
+        .setFooter({
+          text: `Turn: ${turn} | Wave: ${currentWave} / ${maxWave} | Overtime: ${currentTime.toFixed(
+            2
+          )} / ${maxTime.toFixed(2)}`,
+        })
         .setColor(overtime ? "Red" : "Green");
 
       // -=+=- Buttons -=+=-
@@ -762,6 +777,7 @@ module.exports = (client) => {
                 ephemeral: true,
               });
             } else {
+              await i.deferUpdate();
               active = player.gear.active.equipped[i.customId.slice(0, 1)];
               collector.stop();
             }
@@ -2282,10 +2298,7 @@ module.exports = (client) => {
             );
             await AddEffect(player, player, "Weight", active, weight, 2);
 
-            affected.push([
-              AffectedText(player),
-              ` **+${Math.round(weight * 100)}%** 🎯 (2)`,
-            ]);
+            affected.push([AffectedText(player), ` **+${weight}** 🎯 (2)`]);
 
             activeReply = `**${
               player.name
@@ -3133,8 +3146,6 @@ module.exports = (client) => {
         await HandleThresholds(player);
       }
 
-      await wait(overtime ? 1.5 * 1000 : 3 * 1000);
-
       // -=+=- Post-actions -=+=-
       player.next = FixedFloat(player.next + player.interval);
 
@@ -3158,13 +3169,26 @@ module.exports = (client) => {
       // DoT
       FilterDeadPlayers();
 
+      // Add next wave if applicable
+      if (!enemies.length) {
+        if (waveEnemies.length) {
+          await AdvanceWave();
+
+          await thread.send(`__Wave completed. New wave incoming!__`);
+        }
+      }
+
+      turn++;
+
+      await wait(overtime ? 1.5 * 1000 : 3 * 1000);
+
       // Check if any team has won
       if (!enemies.length || !allies.length) {
         gameEnded = true;
         winners = !enemies.length
           ? allAllies.map((player) => player.name).join(", ")
           : allEnemies.map((player) => player.name).join(", ");
-        await thread.send(`Battle ended! Winners: **${winners}**`);
+        await thread.send(`__Battle ended! Winners: **${winners}**__`);
       }
     }
 

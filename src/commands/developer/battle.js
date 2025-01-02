@@ -17,22 +17,25 @@ module.exports = {
       ? authorProfile.party.members.length
       : 1;
 
-    const startEnemies = [];
+    const waves = 1;
+    const waveEnemies = Array.from({ length: waves }, () => []);
 
-    for (let i = 0; i < startAllies * 2; i++) {
-      const rng = Math.random();
-      const tier = rng < 0.6 ? "standard" : rng < 0.9 ? "elite" : "boss";
+    for (const wave of waveEnemies) {
+      for (let i = 0; i < startAllies * 2; i++) {
+        const rng = Math.random();
+        const tier = rng < 0.6 ? "standard" : rng < 0.9 ? "elite" : "boss";
 
-      const enemy =
-        monsterArray[tier][
-          Math.floor(Math.random() * monsterArray[tier].length)
-        ];
-      startEnemies.push(enemy);
+        const enemy =
+          monsterArray[tier][
+            Math.floor(Math.random() * monsterArray[tier].length)
+          ];
+        wave.push(enemy);
+      }
     }
 
     // Handle battle
     await client.handleBattle(interaction, {
-      startEnemies,
+      waveEnemies,
     });
   },
 };
