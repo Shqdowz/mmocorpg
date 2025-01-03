@@ -346,7 +346,7 @@ module.exports = (client) => {
       }
     }
 
-    function SelectVictim(players) {
+    function SelectVictim(players, times, repeat) {
       const totalWeight = players.reduce(
         (total, player) => total + player.weight,
         0
@@ -726,6 +726,8 @@ module.exports = (client) => {
             new Promise((resolve) => collector.on("end", resolve)),
             wait(overtime ? 7.5 * 1000 : 15 * 1000),
           ]);
+
+          if (!active) active = "time";
         }
       }
 
@@ -1016,6 +1018,137 @@ module.exports = (client) => {
         }
       }
 
+      function PushAffected(target, type, duration, value) {
+        if (!affected.find((a) => a[0] == target.id)) {
+          affected.push([target.id, `${AffectedText(target)}`]);
+        }
+
+        const theAffected = affected.find((a) => a[0] == target.id);
+
+        switch (type) {
+          case "Cleanse":
+            break;
+          case "Damage":
+            // prettier-ignore
+            theAffected.push(` **-${value}** ${client.getEmoji("damage")} (${duration})`);
+            break;
+          case "DamageIncrease":
+            // prettier-ignore
+            theAffected.push(` **${Math.round((value - 1) * 100)}%** ${client.getEmoji("damage_increase")} (${duration})`)
+            break;
+          case "DamageReduction":
+            // prettier-ignore
+            theAffected.push(` **${Math.round((1 - value) * 100)}%** ${client.getEmoji("damage_reduction")} (${duration})`)
+            break;
+          case "Healing":
+            if (doneHealing) {
+              // prettier-ignore
+              theAffected.push(` **+${value}** ${client.getEmoji("health")} (${duration})`);
+            }
+            break;
+          case "Speed":
+            const symbol = value >= 0 ? "+" : "";
+            // prettier-ignore
+            theAffected.push(` **${symbol}${value.toFixed(2)}** ${client.getEmoji("speed")} (${duration})`);
+            break;
+          case "Stun":
+            // prettier-ignore
+            theAffected.push(` **${Math.round(value * 100)}%** ${client.getEmoji("stun")} (${duration})`)
+            break;
+          case "Weight":
+            break;
+        }
+      }
+
+      // prettier-ignore
+      async function AdministerEffect(player, target, action, from, type, range, duration) {
+        let scaling, value;
+
+        // Determine scaling
+        if (player.user) {
+          switch (type) {
+            case "Cleanse":
+              break;
+            case "Damage":
+              scaling =
+                (overtime ? 2 : 1) *
+                ScaleByLevel(player.gear[action].list[from], 0.1);
+              break;
+            case "Healing":
+              scaling =
+                (overtime ? 0.5 : 1) *
+                ScaleByLevel(player.gear[action].list[from], 0.1);
+              break;
+            case "DamageIncrease":
+            case "DamageReduction":
+            case "Speed":
+            case "Stun":
+            case "Weight":
+              scaling = ScaleByLevel(player.gear[action].list[from], 0.05)
+              break;
+          }
+        } else {
+          switch (type) {
+            case "Cleanse":
+              break;
+            case "Damage":
+              scaling = (overtime ? 2 : 1) * ScaleByLevel(player.level, 0.02)
+              break;
+            case "Healing":
+              scaling = (overtime ? 0.5 : 1) * ScaleByLevel(player.level, 0.02)
+              break;
+            case "DamageIncrease":
+            case "DamageReduction":
+            case "Speed":
+            case "Stun":
+            case "Weight":
+              scaling = ScaleByLevel(player.level, 0.01)
+              break;
+          }
+        }
+
+        // Determine value
+        switch (type) {
+          case "Cleanse":
+            break;
+          case "Damage":
+            if (duration == 1) {
+              staticDamage = await CalculateEffect(range, scaling);
+              value = dealtDamage;
+            } else {
+              staticDoT = await CalculateEffect(range, scaling);
+              value = realDamage;
+            }
+            break;
+          case "DamageIncrease":
+            damageIncrease = 1 + await CalculateEffect(range, scaling)
+            value = damageIncrease
+            break;
+          case "DamageReduction":
+            damageReduction = 1 - await CalculateEffect(range, scaling)
+            value = damageReduction
+            break;
+          case "Healing":
+            staticHealing = await CalculateEffect(range, scaling);
+            value = doneHealing;
+            break;
+          case "Speed":
+            speed = await CalculateEffect(range, scaling);
+            value = speed;
+            break;
+          case "Stun":
+            stun = await CalculateEffect(range, scaling);
+            value = stun;
+            break;
+          case "Weight":
+            break;
+        }
+
+        await AddEffect(player, target, type, from, value, duration);
+
+        PushAffected(target, type, duration, value);
+      }
+
       // -=+=- Turn preparation -=+=-
       function DetermineSides(player) {
         if (allAllies.includes(player)) {
@@ -1052,243 +1185,77 @@ module.exports = (client) => {
         switch (active) {
           case "Boombox":
             for (const victim of opponents) {
-              staticDamage = await CalculateEffect(
-                [14, 18],
-                (overtime ? 2 : 1) *
-                  ScaleByLevel(player.gear.active.list[active], 0.1)
-              );
-              await AddEffect(
-                player,
-                victim,
-                "Damage",
-                active,
-                staticDamage,
-                1
-              );
+              // prettier-ignore
+              await AdministerEffect(player, victim, "active", active, "Damage", [14, 18], 1)
 
               if (Math.random() <= 0.5) {
-                stun = await CalculateEffect(
-                  [0.4],
-                  ScaleByLevel(player.gear.active.list[active], 0.05)
-                );
-                await AddEffect(player, victim, "Stun", active, stun, 1);
+                // prettier-ignore
+                await AdministerEffect(player, victim, "active", active, "Stun", [0.4], 1);
               } else {
                 stun = 0;
               }
-
-              affected.push([
-                AffectedText(victim),
-                ` **-${dealtDamage}** ${client.getEmoji("damage")} (1)`,
-                stun
-                  ? `, **${Math.round(stun * 100)}%** ${client.getEmoji(
-                      "stun"
-                    )} (1)`
-                  : ``,
-              ]);
             }
 
-            activeReply = `**${
-              player.name
-            }** used **${active}** on **all opponents**!\n${affected
-              .map((a) => a[0] + a[1] + a[2])
-              .join("\n")}`;
+            activeReply = `**${player.name}** used **${active}** on **all opponents**!`;
             break;
           case "Life Jacket":
-            damageReduction =
-              1 -
-              (await CalculateEffect(
-                [0.2],
-                ScaleByLevel(player.gear.active.list[active], 0.05)
-              ));
-            await AddEffect(
-              player,
-              player,
-              "DamageReduction",
-              active,
-              damageReduction,
-              2
-            );
+            // prettier-ignore
+            await AdministerEffect(player, player, "active", active, "DamageReduction", [0.2], 2)
 
-            affected.push([
-              AffectedText(player),
-              ` **${Math.round(
-                (1 - damageReduction) * 100
-              )}%** ${client.getEmoji("damage_reduction")} (2)`,
-            ]);
-
-            activeReply = `**${
-              player.name
-            }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
+            activeReply = `**${player.name}** used **${active}**!`;
             break;
           case "Monster Taser":
             victim = SelectVictim(opponents);
 
-            staticDamage = await CalculateEffect(
-              [28, 32],
-              (overtime ? 2 : 1) *
-                ScaleByLevel(player.gear.active.list[active], 0.1)
-            );
-            await AddEffect(player, victim, "Damage", active, staticDamage, 1);
+            // prettier-ignore
+            await AdministerEffect(player, victim, "active", active, "Damage", [28, 32], 1);
 
-            affected.push([
-              AffectedText(victim),
-              ` **-${dealtDamage}** ${client.getEmoji("damage")} (1)`,
-            ]);
-
-            activeReply = `**${player.name}** used **${active}** on **${
-              victim.name
-            }**!\n${affected.map((a) => a[0] + a[1])}`;
+            activeReply = `**${player.name}** used **${active}** on **${victim.name}**!`;
             break;
           case "Really Cool Sticker":
-            damageIncrease =
-              1 +
-              (await CalculateEffect(
-                [0.4],
-                ScaleByLevel(player.gear.active.list[active], 0.05)
-              ));
-            await AddEffect(
-              player,
-              player,
-              "DamageIncrease",
-              active,
-              damageIncrease,
-              3
-            );
+            // prettier-ignore
+            await AdministerEffect(player, player, "active", active, "DamageIncrease", [0.4], 3)
 
-            affected.push([
-              AffectedText(player),
-              ` **${Math.round(
-                (damageIncrease - 1) * 100
-              )}%** ${client.getEmoji("damage_increase")} (3)`,
-            ]);
-
-            activeReply = `**${
-              player.name
-            }** used **${active}**!\n${affected.map((a) => a[0] + a[1])}`;
+            activeReply = `**${player.name}** used **${active}**!`;
             break;
           case "Shelldon":
             await PushMonster("Shelldon", 1, currentTime, player);
 
-            activeReply = `**${player.name}** used **${active}**! **1 Shelldon** has been spawned.`;
+            activeReply = `**${player.name}** used **${active}**!`;
             break;
           case "Smart Fireworks":
             for (const victim of opponents) {
-              staticDamage = await CalculateEffect(
-                [8, 12],
-                (overtime ? 2 : 1) *
-                  ScaleByLevel(player.gear.active.list[active], 0.1)
-              );
-              await AddEffect(
-                player,
-                victim,
-                "Damage",
-                active,
-                staticDamage,
-                1
-              );
-
-              affected.push([
-                AffectedText(victim),
-                ` **-${dealtDamage}** ${client.getEmoji("damage")} (1)`,
-              ]);
+              // prettier-ignore
+              await AdministerEffect(player, victim, "active", active, "Damage", [8, 12], 1);
             }
 
-            activeReply = `**${
-              player.name
-            }** used **${active}** on **all opponents**!\n${affected
-              .map((a) => a[0] + a[1])
-              .join("\n")}`;
+            activeReply = `**${player.name}** used **${active}** on **all opponents**!`;
             break;
           case "Snow Globe":
             for (const victim of opponents) {
-              staticDoT = await CalculateEffect(
-                [3, 7],
-                (overtime ? 2 : 1) *
-                  ScaleByLevel(player.gear.active.list[active], 0.1)
-              );
-              await AddEffect(player, victim, "Damage", active, staticDoT, 3);
-
-              speed = await CalculateEffect(
-                [-0.15],
-                ScaleByLevel(player.gear.active.list[active], 0.05)
-              );
-              await AddEffect(player, victim, "Speed", active, speed, 3);
-
-              affected.push([
-                AffectedText(victim),
-                ` **-${realDamage}** ${client.getEmoji("damage")} (3)`,
-                `, **${speed.toFixed(2)}** ${client.getEmoji("speed")} (3)`,
-              ]);
+              // prettier-ignore
+              await AdministerEffect(player, victim, "active", active, "Damage", [3, 7], 3)
+              // prettier-ignore
+              await AdministerEffect(player, victim, "active", active, "Speed", [-0.15], 3)
             }
 
-            activeReply = `**${
-              player.name
-            }** used **${active}** on **all opponents**!\n${affected
-              .map((a) => a[0] + a[1] + a[2])
-              .join("\n")}`;
+            activeReply = `**${player.name}** used **${active}** on **all opponents**!`;
             break;
           case "Turbo Pills":
-            staticHealing = await CalculateEffect(
-              [14, 18],
-              (overtime ? 0.5 : 1) *
-                ScaleByLevel(player.gear.active.list[active], 0.1)
-            );
-            await AddEffect(
-              player,
-              player,
-              "Healing",
-              active,
-              staticHealing,
-              2
-            );
+            // prettier-ignore
+            await AdministerEffect(player, player, "active", active, "Healing", [14, 18], 2)
+            // prettier-ignore
+            await AdministerEffect(player, player, "active", active, "Speed", [0.18], 2)
 
-            speed = await CalculateEffect(
-              [0.18],
-              ScaleByLevel(player.gear.active.list[active], 0.05)
-            );
-            await AddEffect(player, player, "Speed", active, speed, 2);
-
-            affected.push([
-              AffectedText(player),
-              ` **+${staticHealing}** ${client.getEmoji("health")} (2)`,
-              `, **+${speed.toFixed(2)}** ${client.getEmoji("speed")} (2)`,
-            ]);
-
-            activeReply = `**${
-              player.name
-            }** used **${active}**!\n${affected.map(
-              (a) => a[0] + a[1] + a[2]
-            )}`;
+            activeReply = `**${player.name}** used **${active}**!`;
             break;
           case "Water Balloon":
             for (const victim of teammates) {
-              staticHealing = await CalculateEffect(
-                [14, 18],
-                (overtime ? 0.5 : 1) *
-                  ScaleByLevel(player.gear.active.list[active], 0.1)
-              );
-              await AddEffect(
-                player,
-                victim,
-                "Healing",
-                active,
-                staticHealing,
-                1
-              );
-
-              if (doneHealing) {
-                affected.push([
-                  AffectedText(victim),
-                  ` **+${doneHealing}** ${client.getEmoji("health")} (1)`,
-                ]);
-              }
+              // prettier-ignore
+              await AdministerEffect(player, victim, "active", active, "Healing", [14, 18], 1);
             }
 
-            activeReply = `**${
-              player.name
-            }** used **${active}** on **all teammates**!\n${affected
-              .map((a) => a[0] + a[1])
-              .join("\n")}`;
+            activeReply = `**${player.name}** used **${active}** on **all teammates**!`;
             break;
 
           case "Axe Slash": // executioner, overlord
@@ -2350,9 +2317,21 @@ module.exports = (client) => {
           case "skip":
             activeReply = `**${player.name}** doesn't have any valid moves. Skipping turn...`;
             break;
-          default:
+          case "time":
             activeReply = `**${player.name}**'s time ran out.`;
             break;
+        }
+
+        switch (active) {
+          case "Shelldon":
+            activeReply += ` **1 Shelldon** has been spawned.`;
+            break;
+
+          default:
+            activeReply += `\n${affected
+              .filter((entry) => entry.length > 2)
+              .map((entry) => `${entry[1]}${entry.slice(2).join(",")}`)
+              .join("\n")}`;
         }
 
         await thread.send({
@@ -3141,6 +3120,11 @@ module.exports = (client) => {
 
     // -=+=- Turn preparation -=+=-
     while (!gameEnded) {
+      const playerCount = players.length;
+
+      const currentPlayer = players[0];
+      currentTime = currentPlayer.next;
+
       // Handle overtime
       if (!overtime && currentTime >= maxTime) {
         overtime = true;
@@ -3151,11 +3135,6 @@ module.exports = (client) => {
           });
         }
       }
-
-      const playerCount = players.length;
-
-      const currentPlayer = players[0];
-      currentTime = currentPlayer.next;
 
       await HandleTurn(currentPlayer);
 
