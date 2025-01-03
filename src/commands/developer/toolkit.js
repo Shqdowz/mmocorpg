@@ -4,6 +4,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 // -=+=- Schemas -=+=-
 const Achievement = require("../../schemas/achievementSchema");
 const Cat = require("../../schemas/catSchema");
+const Gear = require("../../schemas/gearSchema");
 const Guild = require("../../schemas/guildSchema");
 const Loadout = require("../../schemas/loadoutSchema");
 const Monster = require("../../schemas/monsterSchema");
